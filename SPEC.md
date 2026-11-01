@@ -1,4 +1,4 @@
-# MicroMiniChat Specification — 0.0.2 Preview (development)
+# MicroMiniChat Specification — 0.0.3 Preview (development)
 
 ## Scope
 
@@ -16,7 +16,10 @@ a preview; unperformed network/security/performance checks must remain visible.
 
 - WebRTC DTLS/SCTP, ICE, explicit STUN or host-only discovery, and opt-in authenticated TURN (source update). Non-trickle
   manual offer/answer exchange with bounded versioned signaling, clipboard sensitivity
-  hints, Sharesheet export/import and strict validation. No default external service.
+  hints, Sharesheet export/import and strict validation. A temporary phone-hosted TLS
+  listener can automate offer/answer exchange using an IP/port/pinned-certificate
+  invitation. This requires reachable inbound TCP; manual fallback remains available.
+  No default external service or public signaling backend.
 - Persistent ECDSA DTLS certificate identity; AES-GCM encryption at rest using a
   nonexportable Keystore wrapping key. Full SHA-256 fingerprint comparison, explicit
   first trust, persistent continuity and unexpected-identity blocking.

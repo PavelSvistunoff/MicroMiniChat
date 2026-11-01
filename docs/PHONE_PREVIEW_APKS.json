@@ -1,0 +1,34 @@
+{
+  "version": "0.0.3-preview",
+  "version_code": 3,
+  "signed": true,
+  "phone_hosted_pairing": true,
+  "internet_reachability_tested": false,
+  "apks": [
+    {
+      "apk": "microminichat-0.0.3-preview-arm64-v8a.apk",
+      "bytes": 12564249,
+      "sha256": "cf874597ced5a0b552a98f0aa684fa105dcff08fee31efa0710b357f96fe15f2"
+    },
+    {
+      "apk": "microminichat-0.0.3-preview-armeabi-v7a.apk",
+      "bytes": 7090023,
+      "sha256": "b77abbccd0bafa1a131b41bdee2bea4ebbc403a314ff6b4a869f3adc8fd54307"
+    },
+    {
+      "apk": "microminichat-0.0.3-preview-x86.apk",
+      "bytes": 13096539,
+      "sha256": "8c737013364a771436bcd7d1e403861e7b9384d8ba10773ebf2e32fe5f59a80d"
+    },
+    {
+      "apk": "microminichat-0.0.3-preview-x86_64.apk",
+      "bytes": 16443046,
+      "sha256": "942f266b69a0438b2ab5e7f827e56afaaae18a620d972c31cab96ae348682dd4"
+    },
+    {
+      "apk": "microminichat-0.0.3-preview-universal.apk",
+      "bytes": 48326576,
+      "sha256": "f6a9182db869a2c5a6e2f915f25df492fb4797568421e9c894fb7cb02da01eb3"
+    }
+  ]
+}

@@ -13,4 +13,5 @@
     <item name="pair_verify" type="id" />
     <item name="pair_settings" type="id" />
     <item name="pair_network" type="id" />
+    <item name="pair_on_phone" type="id" />
 </resources>

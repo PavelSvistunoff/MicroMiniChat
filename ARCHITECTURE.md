@@ -10,6 +10,7 @@ AndroidX runner/JUnit are test-only.
 ```text
 MainActivity → ChatSession (one serialized coordinator)
                    ├─ Signal: independent bounded offer/answer codec
+                   ├─ PhoneInvite / PhonePairing → temporary pinned TLS listener/client
                    ├─ IdentityStore + TrustStore
                    ├─ ReliableProtocol → MessageDatabase
                    ├─ FileTransfers (independent streaming worker)
@@ -35,8 +36,11 @@ if external providers stall. No private payload is sent to diagnostic logging.
   networks. This user-approved change introduces relay hosting/traffic costs; see
   `docs/TURN.md`. It does not add offline delivery or bypass all firewalls.
 - **Non-trickle signaling:** export after gathering completes, including candidates.
-  Two manual payloads; failure/timeouts require a new exchange. Single-code QR is not
-  assumed practical for SDP size.
+  Manual fallback exchanges two payloads. Phone-hosted pairing sends them automatically
+  over a temporary pinned TLS socket; the shared invitation contains the numeric phone
+  IP/port, ephemeral certificate pin and random access token. It requires reachable
+  inbound TCP and makes no automatic NAT mapping. See `docs/PHONE_PAIRING.md`.
+  Failure/timeouts require a new invitation. Single-code QR is not assumed for full SDP.
 - **Standard certificate pinning:** persist a DTLS ECDSA certificate, compare its
   SHA-256 DER fingerprint independently, then pin it. DTLS checks the live certificate.
   This avoids a custom signing handshake and extra application content encryption.

@@ -63,3 +63,23 @@ packager/publisher for this source: its release tag and APKs remain immutable.
 `tools/build_release.py` signs the configured version with the existing private
 signer. Local TURN preview APKs can be placed under ignored `release/0.0.2-preview/`;
 they are not a published release or evidence of successful real-internet relay tests.
+
+
+## Phone-hosted development preview
+
+`0.0.3-preview` / code 3 adds a temporary pinned TLS server on the creator’s phone.
+Keep original release artifacts/tags unchanged. Local signed APKs are staged under
+ignored `release/0.0.3-preview/`; do not publish them as the original 0.0.1 release.
+For two signed app UIDs on a disposable emulator, build the ordinary release with
+`tools/build_release.py`, then its test peer using `tools/build_release.py -PqaPeer`.
+After verifying/packaging the main APK, run:
+
+```sh
+python3 tools/phone_pairing_smoke.py --device emulator-5554 --replace-test-install
+```
+
+This explicitly replaces test installations, temporarily changes/restores the cached-app
+freezer to model two foreground phones, uses the real clipboard for the invitation,
+compares full fingerprints and checks a persisted text ACK. It never logs invitations,
+addresses or fingerprints. The QA package is removed afterward. This remains a single
+emulator test, not public IPv4/IPv6 reachability or physical background acceptance.

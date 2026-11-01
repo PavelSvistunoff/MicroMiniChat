@@ -24,24 +24,28 @@ covers an API 35 arm64 emulator only. No Play Store eligibility is claimed.
 For restrictive internet networks, see [TURN setup](docs/TURN.md). The checked-in
 0.0.1 APKs do not include the new TURN source changes.
 
-These steps describe the updated `0.0.2-preview` UI; original 0.0.1 uses manual
-offer/answer labels.
+Upgrading from earlier previews: see the [certificate lifetime correction](docs/IDENTITY_DESIGN.md).
+Existing identities keep their original expiry; resetting an expired identity deletes local history.
 
-1. Keep both apps open and tap **Pair / verify**. Expand **Connection settings**
-   to configure STUN or your authenticated TURN server before connecting. Settings
-   are hidden by default; no external server is selected automatically.
-2. On phone A, tap **Start chat**, then **Share invitation** (or **Copy invitation**).
-   Send it to your friend through a trusted messenger.
-3. On phone B, share that text into MicroMiniChat, or tap **Join chat** and
-   **Paste & connect**. Shared text is prefilled; tap **Connect with pasted text**
-   to accept it. Tap **Share reply** and send the reply back to A.
-4. On phone A, open the shared reply and tap **Connect with pasted text**, or use
-   **Paste & connect**. Each phone shows its next step; raw exported SDP is hidden.
-5. Once connected, tap **Compare fingerprints**. Independently compare the full
-   fingerprints shown on the two devices, then confirm they match on each phone.
-   Never trust fingerprints supplied only through the same untrusted signaling path.
-6. Return to chat to send text or attach files. Delivered means a remote persistence
-   ACK; file completion requires verified SHA-256 and a completion ACK.
+The current `0.0.3-preview` can host pairing on the creator’s phone. It requires a
+publicly reachable IP/TCP port; it does not bypass mobile CGNAT. See the
+[phone-hosting setup](docs/PHONE_PAIRING.md) before testing across different networks.
+
+1. Creator: **Pair / verify → Connection settings**. Check the advertised phone IP
+   and TCP port (default 44333); arrange port forwarding/firewall access if needed.
+   Configure STUN/TURN for WebRTC where required.
+2. Creator: **Start chat → Share invitation**. The invitation includes the reachable
+   address and temporary TLS pin/token; keep this phone open.
+3. Friend: open/share the link into MicroMiniChat and tap **Connect with pasted text**,
+   or choose **Join chat → Paste & connect**. The offer and answer are exchanged
+   automatically; no reply needs to be sent through another messenger.
+4. Compare the full persistent fingerprints independently and confirm on both phones,
+   then return to chat. A fingerprint supplied only with the invitation is insufficient.
+5. Send text or files. Delivered means a remote persistence ACK; file completion
+   requires verified SHA-256 and a completion ACK.
+
+If the creator cannot host, uncheck **Host pairing on this phone** for manual
+invitation/reply exchange. Original 0.0.1 and 0.0.2 APKs retain their earlier UI.
 
 STUN is discovery, not a relay. Some NAT/CGNAT/firewall combinations cannot connect
 without TURN; configure your own authenticated TURN endpoint in the updated app. SDP reveals addresses, so treat it as

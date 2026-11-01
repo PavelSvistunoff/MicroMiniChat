@@ -86,3 +86,23 @@ refuses, report manual cleanup. Offer expiry is five minutes, sender ACK/complet
 timeout 30 seconds, receiver inactivity 60 seconds (provider-blocked I/O can delay these).
 One incoming/outgoing transfer is supported per session. Interrupted transfers restart
 from zero with new selection/consent; resume and unknown-size spooling are not promised.
+
+
+## Phone-hosted signaling v1
+
+Invitation: `microminichat://IP:PORT/pair/v1#PIN.TOKEN` (IPv6 uses brackets), at most
+512 characters. PIN is the 64-character lowercase hex SHA-256 of an ephemeral TLS
+certificate; TOKEN is a canonical unpadded URL-safe Base64 32-byte random capability.
+Reject nonnumeric addresses, scoped IPv6, userinfo, queries, invalid ports, noncanonical
+encoding and unknown versions. Parsing/importing never connects automatically.
+
+Use standard TLS 1.2 or 1.3 and require the exact invitation certificate pin and validity.
+Inside TLS, the joiner sends big-endian magic `0x4d504831` (4 bytes) and token (32).
+After constant-time token comparison, the creator sends the existing MMC1 offer as
+length (4 bytes) + UTF-8. Joiner returns the MMC1 answer with the same framing; both
+validate role and session UUID. Each payload is at most 256 KiB, with strict UTF-8 and
+the existing Signal parser limits. Creator replies with byte 1 after validating the
+answer, then closes the single-use listener. This ACK acknowledges signaling only,
+not peer trust, message delivery or WebRTC connectivity. No application content or
+TURN password goes over this socket. Malformed/authentication/timeout failures close
+the exchange; the user must create a fresh invitation. Limits are in PHONE_PAIRING.md.

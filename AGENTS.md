@@ -38,8 +38,9 @@ clear resource names. Native Views/platform APIs are preferred. Keep dependencie
 minimal/pinned; review verification metadata changes. Never log text, SDP, network
 addresses, keys or file contents. Use established cryptography; do not add a new
 handshake. The user explicitly approved optional TURN on 2026-11-01; keep relay
-configuration opt-in and never commit credentials. No other backend/cloud/signaling
-service without explicit approval.
+configuration opt-in and never commit credentials. The latest user choice is pairing
+hosted on the creator’s phone, with accepted public-IP/forwarding limits; do not deploy
+a public signaling service. No other backend/cloud service without explicit approval.
 Read SPEC, ARCHITECTURE, SECURITY and PROTOCOL before changing these boundaries.
 
 ## Commits and Releases

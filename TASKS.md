@@ -283,3 +283,31 @@ identity, persistence and file-transfer regressions.
 TURN configuration/credentials remain necessary on restrictive networks. No hosted
 signaling, short invitation codes or single-SDP QR assumption. Real-phone UX and
 internet relay acceptance remain pending.
+
+
+## M15 — Phone-hosted Pairing
+
+**Status:** Implemented; 23 app JVM / 32 emulator tests, host/lint, signed build and two-UID signed automatic-pairing smoke pass. Real internet acceptance pending.
+
+**Scope:** Latest explicit user choice: creator hosts temporary pairing using its reachable IP.
+
+**Dependencies:** M04 signaling, M05 identity verification, M10 lifecycle, optional M13 TURN.
+
+**Implementation tasks:** Detected/overridden numeric IP and port; temporary pinned TLS
+listener/client; one shared invitation and automatic answer return; bounded framed
+parsing, capability authentication, single use, deadlines and cancellation; explicit
+Sharesheet/deep-link acceptance; preserve manual fallback and persistent verification.
+
+**Acceptance criteria:** TLS exchange and complete native sessions succeed in emulator;
+wrong pins/tokens/session/oversized input fail safely; listeners close on cancellation;
+build/unit/lint checks pass. Two physical phones over public IPv4/IPv6 remain an open gate.
+
+**Unit tests:** IPv4/IPv6 invitation roundtrip, malformed/canonical/size bounds and token immutability.
+
+**Integration tests:** TLS pin/token rejection, incomplete-authentication deadline, oversized
+frame, wrong-session answer, listener closure, network changes, automatic native pairing
+and durable text ACK, deep-link review without automatic connection; existing regressions.
+
+**Known limitations:** No automatic port forwarding, public-IP discovery service, public
+signaling backend or CGNAT bypass. TURN does not expose the pairing listener. Both apps
+must remain open; custom links may need copy/paste. Internet hardware testing is pending.

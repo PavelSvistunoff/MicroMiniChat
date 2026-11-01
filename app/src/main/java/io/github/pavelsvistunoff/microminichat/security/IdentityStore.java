@@ -59,7 +59,7 @@ public final class IdentityStore {
                     .setKeySize(256).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                     .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).build()); generator.generateKey();
         }
-        RtcCertificatePem identity = RtcCertificatePem.generateCertificate(PeerConnection.KeyType.ECDSA,365L*24*60*60);
+        RtcCertificatePem identity = RtcCertificatePem.generateCertificate(PeerConnection.KeyType.ECDSA,java.util.concurrent.TimeUnit.DAYS.toMillis(365));
         if (identity == null) throw new GeneralSecurityException("IDENTITY_GENERATION_FAILED");
         certificate(identity).checkValidity();
         ByteArrayOutputStream encoded = new ByteArrayOutputStream();

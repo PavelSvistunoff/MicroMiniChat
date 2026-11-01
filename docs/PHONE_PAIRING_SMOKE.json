@@ -1,0 +1,15 @@
+{
+  "version": "0.0.3-preview",
+  "environment": "API 35 arm64 emulator; two signed app UIDs; cached-app freezer temporarily disabled to model two foreground phones",
+  "physical_hardware": false,
+  "internet_connectivity_tested": false,
+  "turn_tested": false,
+  "creator_tls_listener_started": true,
+  "invitation_copied_without_payload_logging": true,
+  "automatic_offer_answer_exchange": true,
+  "full_mutual_fingerprint_comparison": true,
+  "durable_message_acknowledgement": true,
+  "history_survives_force_stop": true,
+  "no_automatic_reconnect_after_force_stop": true,
+  "new_listener_after_restart": true
+}

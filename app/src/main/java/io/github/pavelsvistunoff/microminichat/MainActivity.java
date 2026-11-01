@@ -28,8 +28,8 @@ public final class MainActivity extends Activity {
     private TextView pairStep;
     private LinearLayout pairChoices, pairShare, pairImport, pairVerify;
     private Button pairShareButton, pairCopyButton, pairStartButton, pairConnectButton;
-    private EditText pairStun, pairTurn, pairUsername, pairPassword;
-    private CheckBox pairRelayOnly;
+    private EditText pairStun, pairTurn, pairUsername, pairPassword, pairPhoneAddress, pairPhonePort;
+    private CheckBox pairRelayOnly, pairOnPhone;
     private boolean joining;
     private String displayedSignal="";
     private boolean displayedOffer;
@@ -157,7 +157,7 @@ public final class MainActivity extends Activity {
         pairShare=column();form.addView(pairShare);
         pairShareButton=button(pairShare,"Share invitation",this::sharePairing);
         pairShareButton.setId(R.id.pair_share);
-        pairCopyButton=button(pairShare,"Copy invitation",()->copy(session.localSignal));
+        pairCopyButton=button(pairShare,"Copy invitation",()->copy(outgoingInvitation()));
 
         pairImport=column();form.addView(pairImport);
         imported=input(pairImport,"Paste invitation or reply here",Signal.MAX_CHARS);imported.setMaxLines(3);imported.setId(R.id.pair_input);
@@ -176,11 +176,17 @@ public final class MainActivity extends Activity {
         identity=text(pairVerify,"");
         button(pairVerify,"Compare fingerprints",this::confirmVerify).setId(R.id.pair_verify);
 
-        text(form,"For internet connections, configure discovery or a relay below. No server is selected automatically.");
+        text(form,"Phone hosting needs a publicly reachable IP and TCP port. Check Connection settings before starting. No public signaling server is used.");
         LinearLayout network=column();network.setVisibility(android.view.View.GONE);
         Button settings=button(form,"Connection settings",()->network.setVisibility(
                 network.getVisibility()==android.view.View.VISIBLE?android.view.View.GONE:android.view.View.VISIBLE));
         settings.setId(R.id.pair_settings);form.addView(network);network.setId(R.id.pair_network);
+        pairOnPhone=new CheckBox(this);pairOnPhone.setText("Host pairing on this phone (reachable public IP required)");pairOnPhone.setChecked(true);
+        pairOnPhone.setId(R.id.pair_on_phone);network.addView(pairOnPhone);
+        pairPhoneAddress=input(network,"Creator’s reachable IP (public IP if forwarded)",45);
+        pairPhoneAddress.setText(io.github.pavelsvistunoff.microminichat.pairing.PhoneAddress.detected(this));
+        pairPhonePort=input(network,"Pairing TCP port",5);pairPhonePort.setInputType(InputType.TYPE_CLASS_NUMBER);pairPhonePort.setText("44333");
+        text(network,"Forward the same TCP port to this phone if behind a router. Mobile CGNAT usually prevents hosting. Uncheck phone hosting for manual invitation/reply exchange.");
         text(network,"STUN discovers routes. TURN relays encrypted traffic when direct routes fail; its operator sees traffic metadata. Credentials are not saved.");
         pairStun=input(network,"STUN URL (optional)",300);
         pairStun.setText(getPreferences(0).getString("stun",""));
@@ -199,6 +205,7 @@ public final class MainActivity extends Activity {
             pairPassword.setText("");pairUsername.setText("");
             imported=null;identity=null;pairStatus=null;pairStep=null;pairing=null;displayedSignal="";joining=false;
             pairStun=null;pairTurn=null;pairUsername=null;pairPassword=null;pairRelayOnly=null;
+            pairPhoneAddress=null;pairPhonePort=null;pairOnPhone=null;
             pairChoices=null;pairShare=null;pairImport=null;pairVerify=null;
         });
         pairing.show();renderPairing();
@@ -217,15 +224,17 @@ public final class MainActivity extends Activity {
         boolean busy=session.status.equals("Gathering connection details") || session.status.equals("Connecting");
         pairChoices.setVisibility(!session.open && !hasSignal && !joining?android.view.View.VISIBLE:android.view.View.GONE);
         pairStartButton.setEnabled(!busy);
-        pairShare.setVisibility(hasSignal && !session.open?android.view.View.VISIBLE:android.view.View.GONE);
+        boolean phone=session.phonePairingActive;
+        pairShare.setVisibility(!outgoingInvitation().isEmpty() && !session.open?android.view.View.VISIBLE:android.view.View.GONE);
         pairShareButton.setText(displayedOffer?"Share invitation":"Share reply");
         pairCopyButton.setText(displayedOffer?"Copy invitation":"Copy reply");
-        pairImport.setVisibility(!session.open && (hasSignal?displayedOffer:joining)?android.view.View.VISIBLE:android.view.View.GONE);
+        pairImport.setVisibility(!session.open && !phone && (hasSignal?displayedOffer:joining)?android.view.View.VISIBLE:android.view.View.GONE);
         pairConnectButton.setEnabled(!busy);
         imported.setHint(hasSignal && displayedOffer?"Paste your friend’s reply":"Paste your friend’s invitation");
         pairVerify.setVisibility(session.open?android.view.View.VISIBLE:android.view.View.GONE);
         identity.setText("Your fingerprint:\n"+session.localFingerprint+"\nFriend’s fingerprint:\n"+session.remoteFingerprint);
         pairStep.setText(session.open?(session.ready?"Connected — return to chat":session.verified?"Waiting for your friend to verify":"3. Compare fingerprints before chatting")
+                :phone?(!session.phoneInvitation.isEmpty()?"2. Share invitation — your friend joins without sending a reply":"Connecting phones automatically — please wait")
                 :busy?"Preparing connection — please wait"
                 :hasSignal?(displayedOffer?"2. Send invitation, then paste your friend’s reply":"2. Send this reply back to your friend")
                 :joining?"1. Paste your friend’s invitation":"1. Start a chat or join your friend");
@@ -234,19 +243,35 @@ public final class MainActivity extends Activity {
     private void submitPairing(boolean start) {
         try {
             // Validate shared input before changing any connection or network configuration.
-            if (!start) Signal.decode(imported.getText().toString());
+            String incoming=start?"":imported.getText().toString().trim();
+            io.github.pavelsvistunoff.microminichat.pairing.PhoneInvite phone=null;
+            if(!start) {
+                if(incoming.startsWith("microminichat:"))phone=io.github.pavelsvistunoff.microminichat.pairing.PhoneInvite.decode(incoming);
+                else Signal.decode(incoming);
+            }
             io.github.pavelsvistunoff.microminichat.net.IceConfig ice=new io.github.pavelsvistunoff.microminichat.net.IceConfig(
                     pairStun.getText().toString().trim(),pairTurn.getText().toString().trim(),
                     pairUsername.getText().toString(),pairPassword.getText().toString(),pairRelayOnly.isChecked());
             getPreferences(0).edit().putString("stun",ice.stun).apply();
-            if (start) { pairStartButton.setEnabled(false);session.offer(ice); }
-            else { pairConnectButton.setEnabled(false);session.apply(imported.getText().toString(),ice); }
+            if(start) {
+                if(pairOnPhone.isChecked()) {
+                    int port=Integer.parseInt(pairPhonePort.getText().toString());
+                    String address=pairPhoneAddress.getText().toString().trim();
+                    if(!io.github.pavelsvistunoff.microminichat.pairing.PhoneInvite.validIp(address) || port<1 || port>65535)
+                        throw new IllegalArgumentException();
+                    pairStartButton.setEnabled(false);session.offerOnPhone(ice,address,port);
+                } else { pairStartButton.setEnabled(false);session.offer(ice); }
+            } else {
+                pairConnectButton.setEnabled(false);
+                if(phone!=null)session.joinPhone(phone,ice);else session.apply(incoming,ice);
+            }
         } catch (IllegalArgumentException e) { toast("Check the invitation and connection settings; TURN needs URL, username and password"); }
     }
 
+    private String outgoingInvitation() { return session.phonePairingActive?session.phoneInvitation:session.localSignal; }
     private void sharePairing() {
-        if (session.localSignal.isEmpty()) return;
-        Intent send=new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,session.localSignal);
+        if(outgoingInvitation().isEmpty())return;
+        Intent send=new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,outgoingInvitation());
         try { startActivity(Intent.createChooser(send,displayedOffer?"Send chat invitation":"Send chat reply")); }
         catch (ActivityNotFoundException e) { toast("No sharing application available"); }
     }
@@ -266,11 +291,15 @@ public final class MainActivity extends Activity {
         toast("Copied; clipboard may retain network addresses");
     }
     private void receive(Intent intent) {
-        if (!Intent.ACTION_SEND.equals(intent.getAction())) return;
+        boolean view=Intent.ACTION_VIEW.equals(intent.getAction());
+        if(!view && !Intent.ACTION_SEND.equals(intent.getAction()))return;
         try {
-            String value = intent.getStringExtra(Intent.EXTRA_TEXT);
+            String value=view?intent.getDataString():intent.getStringExtra(Intent.EXTRA_TEXT);
             if (value != null && value.length() <= Signal.MAX_CHARS) {
-                Signal.decode(value);pair();joining=true;imported.setText(value);renderPairing();
+                String incoming=value.trim();
+                if(incoming.startsWith("microminichat:"))io.github.pavelsvistunoff.microminichat.pairing.PhoneInvite.decode(incoming);
+                else Signal.decode(incoming);
+                pair();joining=true;imported.setText(incoming);renderPairing();
             }
             else toast("Invalid or oversized shared signaling");
         } catch (RuntimeException e) { toast("Malformed shared signaling"); }

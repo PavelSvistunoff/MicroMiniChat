@@ -150,3 +150,39 @@ Share invitation UI smoke. This is not a two-device internet or relay test. The 
 The existing release_smoke.py harness remains specific to the original 0.0.1 UI;
 it has not been migrated for full two-peer guided-preview UI automation. Real-phone
 usability, relay allocation and real internet-network acceptance remain pending.
+
+
+## 0.0.3-preview phone-hosted pairing
+
+Latest scope: creator hosts the temporary TLS signaling listener; no public signaling
+service was added. Invitation links contain numeric IP/port, certificate pin and access
+token. Join remains explicit; offer/answer return automatically over pinned TLS.
+
+23 app JVM tests, 32 API 35 arm64 emulator tests and six Python host checks pass;
+Android lint passes. Coverage includes native automatic pairing with durable text ACK,
+TLS pin/token rejection, incomplete-authentication recovery, oversized frames, wrong
+sessions, cancellation/network changes, deep-link review and actual certificate expiry.
+No emulator result establishes public internet reachability or two-phone interoperability.
+
+The expiry test exposed a real units defect: 3600 requested from the native certificate
+generator produced approximately three seconds, not one hour. Passing explicit
+milliseconds now produces the intended hour. Persistent identity generation also now
+requests 365 days correctly; existing identities are retained until their actual expiry.
+The incomplete-authentication recovery test and full regression suite pass after this
+fix. Absolute TCP shutdown deadlines also bound incomplete TLS/authentication reads.
+See IDENTITY_DESIGN.md for older-build expiry and explicit-reset implications.
+
+Five signed local preview APKs were produced with R8; signer, permissions, debug-fixture
+exclusion and 64-bit alignment checks passed. PHONE_PREVIEW_APKS.json records sizes and
+hashes. Original 0.0.1 artifact checksums remain unchanged. The preview is not a published
+GitHub release. No new physical-network, TURN allocation or battery result is claimed.
+
+
+Signed two-UID phone-pairing smoke passed: creator starts a TLS listener; the invitation
+moves through the real clipboard into the other app; offer and answer exchange without
+manual reply sharing; full persistent fingerprints match across both views; a text is
+persisted/acknowledged across UIDs; force-stop retains history without automatic reconnect;
+a fresh listener starts after restart. PHONE_PAIRING_SMOKE.json records the result.
+Cached-app freezing was temporarily disabled solely to model two foreground phones and
+restored afterward. This remains one emulator with two signed app UIDs, not two internet
+networks. The separate QA package was removed and the main package stopped afterward.

@@ -31,3 +31,17 @@ Fingerprint comparison is a human operation; clicking trust without comparing
 does not authenticate the intended person. Compromised devices and metadata remain
 outside protection. These design claims require automated adversarial and device
 checks; they are not an independent security audit.
+
+
+## Certificate lifetime correction in 0.0.3-preview
+
+Emulator measurement confirmed that the pinned WebRTC native generator consumes
+milliseconds: passing 3600 produced about three seconds of remaining X.509 validity,
+not one hour. The native [generator contract](https://webrtc.googlesource.com/src/+/refs/heads/main/rtc_base/rtc_certificate_generator.h)
+uses milliseconds. New pairing certificates now request one hour and new persistent
+identity certificates request 365 days using explicit TimeUnit conversions; instrumented
+tests check the actual parsed notAfter timestamps. Previous 0.0.1/0.0.2 identity
+generation requested 31,536,000 milliseconds (about 8.76 hours), despite the original
+one-year documentation. Existing saved certificates retain their actual expiry and
+are never silently replaced. After expiry, an explicit identity reset is required;
+it deletes local history/metadata and requires independent peer verification again.

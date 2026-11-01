@@ -8,6 +8,15 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public final class IdentityTest {
+    @Test public void newIdentityCertificateReallyLastsOneYear() throws Exception {
+        android.content.Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();
+        IdentityStore store=new IdentityStore(context,"identity-lifetime-test");store.reset();
+        try {
+            long remaining=IdentityStore.certificate(store.load()).getNotAfter().getTime()-System.currentTimeMillis();
+            assertTrue("Certificate lifetime is too short",remaining>java.util.concurrent.TimeUnit.DAYS.toMillis(360));
+            assertTrue("Certificate lifetime exceeds the intended year",remaining<=java.util.concurrent.TimeUnit.DAYS.toMillis(366));
+        } finally { store.reset(); }
+    }
     @Test public void identityPersistsEncryptedAndTamperingFailsClosed() throws Exception {
         android.content.Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         IdentityStore store = new IdentityStore(context,"test-identity"); store.reset();

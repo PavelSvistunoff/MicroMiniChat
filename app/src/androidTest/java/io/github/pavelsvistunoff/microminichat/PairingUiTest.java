@@ -64,10 +64,25 @@ public final class PairingUiTest {
             });
         } finally { close(activity); }
     }
+    @Test public void phoneLinkOpensForReviewWithoutConnecting() throws Exception {
+        String value=new io.github.pavelsvistunoff.microminichat.pairing.PhoneInvite("127.0.0.1",9,"ab".repeat(32),new byte[32]).encode();
+        Intent view=intent().setAction(Intent.ACTION_VIEW).setData(android.net.Uri.parse(value));
+        MainActivity activity=launch(view);
+        try {
+            instrumentation.runOnMainSync(()->{
+                assertNotNull(activity.pairing);
+                assertEquals(value,((EditText)activity.pairing.findViewById(R.id.pair_input)).getText().toString());
+                assertTrue(activity.pairing.findViewById(R.id.pair_connect).isShown());
+                assertFalse(session().phonePairingActive);assertFalse(session().open);
+                Intent implicit=new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(value)).setPackage(activity.getPackageName());
+                assertNotNull(activity.getPackageManager().resolveActivity(implicit,0));
+            });
+        } finally { close(activity); }
+    }
     @Test public void startProducesShareInvitationWithoutShowingRawPayload() throws Exception {
         MainActivity activity=launch(intent());
         try {
-            instrumentation.runOnMainSync(()->{activity.pair();activity.pairing.findViewById(R.id.pair_start).performClick();});
+            instrumentation.runOnMainSync(()->{activity.pair();((android.widget.CheckBox)activity.pairing.findViewById(R.id.pair_on_phone)).setChecked(false);activity.pairing.findViewById(R.id.pair_start).performClick();});
             SessionTest.waitFor(()->!session().localSignal.isEmpty());
             instrumentation.waitForIdleSync();
             instrumentation.runOnMainSync(()->{

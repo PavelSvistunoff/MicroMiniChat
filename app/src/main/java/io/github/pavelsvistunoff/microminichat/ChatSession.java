@@ -19,6 +19,7 @@ import io.github.pavelsvistunoff.microminichat.protocol.*;
 import io.github.pavelsvistunoff.microminichat.storage.MessageDatabase;
 import io.github.pavelsvistunoff.microminichat.security.*;
 import org.webrtc.RtcCertificatePem;
+import io.github.pavelsvistunoff.microminichat.pairing.*;
 
 /** Single owner for a single peer. Activity recreation does not recreate the connection. */
 public final class ChatSession {
@@ -89,21 +90,55 @@ public final class ChatSession {
         try { action.run(); } catch (Exception e) { error("Operation failed; disconnect and retry"); }
     }); }
 
+    private PhonePairing phonePairing;
+    private String advertisedPhone="";
+    private int phonePort;
+    private IceConfig phoneIce;
+    public volatile boolean phonePairingActive;
+    public volatile String phoneInvitation="";
     private boolean relayAllowed;
     public void offer(String stun) { offer(IceConfig.direct(stun)); }
     public void offer(IceConfig ice) { execute(() -> {
-        reset();
-        relayAllowed = ice.allowsRelay();
-        offerer = true; sessionId = UUID.randomUUID(); pairingStarted=SystemClock.elapsedRealtime();
-        if (createTransport()) transport.offer(ice);
+        reset();beginOffer(ice);
     }); }
+    private void beginOffer(IceConfig ice) {
+        relayAllowed=ice.allowsRelay();
+        offerer=true;sessionId=UUID.randomUUID();pairingStarted=SystemClock.elapsedRealtime();
+        if(createTransport())transport.offer(ice);
+    }
+    public void offerOnPhone(IceConfig ice,String address,int port) { execute(()->{
+        if(!PhoneInvite.validIp(address) || port<1 || port>65535) { error("Enter a reachable phone IP and TCP port");return; }
+        reset();advertisedPhone=address;phonePort=port;phoneIce=ice;phonePairingActive=true;beginOffer(ice);
+    }); }
+    public void joinPhone(PhoneInvite invitation,IceConfig ice) { execute(()->{
+        reset();phonePairingActive=true;status="Connecting to creator’s phone";changed();
+        phonePairing=PhonePairing.join(invitation,phoneListener(ice));
+    }); }
+    private PhonePairing.Listener phoneListener(IceConfig ice) {
+        // Bound callbacks to this pairing generation, including cancellation before a socket is assigned.
+        long generation=phoneGeneration;
+        return new PhonePairing.Listener() {
+            @Override public void onOffer(String payload) { execute(()->{
+                if(generation==phoneGeneration && phonePairingActive)applySignal(payload,ice,true);
+            }); }
+            @Override public void onAnswer(String payload) { execute(()->{
+                if(generation==phoneGeneration && phonePairingActive)applySignal(payload,ice,true);
+            }); }
+            @Override public void onFailure() { execute(()->{
+                if(generation!=phoneGeneration || !phonePairingActive || open)return;
+                reset();error("Phone pairing failed or expired — check public IP, TCP port and forwarding; or use manual pairing");
+            }); }
+        };
+    }
+    private long phoneGeneration;
 
     public void apply(String value, String stun) { apply(value, IceConfig.direct(stun)); }
-    public void apply(String value, IceConfig ice) { execute(() -> {
+    public void apply(String value, IceConfig ice) { execute(() -> applySignal(value,ice,false)); }
+    private void applySignal(String value,IceConfig ice,boolean keepPhone) {
         Signal signal;
         try { signal = Signal.decode(value); } catch (IllegalArgumentException e) { error("Invalid or unsupported signaling payload"); return; }
         if (signal.offer) {
-            reset();
+            reset(keepPhone);
             relayAllowed = ice.allowsRelay();
             if (signal.hasRelayCandidates() && !relayAllowed) { error("Peer offers TURN; configure TURN to consent before pairing"); return; }
             offerer = false; sessionId = signal.session; pairingStarted=SystemClock.elapsedRealtime(); remoteFingerprint = signal.fingerprint;
@@ -117,7 +152,7 @@ public final class ChatSession {
             if (trust.match(signal.fingerprint) == TrustStore.Match.CHANGED) { reset(); error("Peer identity changed — blocked. Verify independently before resetting trust."); return; }
             answerApplied = true; remoteFingerprint = signal.fingerprint; transport.acceptAnswer(signal.sdp);
         }
-    }); }
+    }
 
     private boolean createTransport() {
         flooded.set(false);
@@ -134,6 +169,7 @@ public final class ChatSession {
                             : "Connection lost — reconnect manually ("+state+")"); return;
                 }
                 open = state.equals("OPEN");
+                if(open && phonePairing!=null) { phonePairing.close();phonePairing=null;phoneInvitation=""; }
                 verified = open && trust.match(remoteFingerprint) == TrustStore.Match.VERIFIED;
                 status = open ? (verified ? "Connected — verified peer" : "Connected — verify peer before messaging")
                         : state.equals("GATHERING") ? "Gathering connection details"
@@ -148,7 +184,20 @@ public final class ChatSession {
                 try {
                     Signal signal = new Signal(offer, sessionId, sdp);
                     if (!localFingerprint.equals(signal.fingerprint)) throw new IllegalArgumentException("IDENTITY_BINDING");
-                    localSignal = signal.encode(); changed();
+                    localSignal = signal.encode();
+                    if(phonePairingActive) {
+                        if(offer) {
+                            try {
+                                PairingTls tls=PairingTls.create(context);
+                                phonePairing=PhonePairing.host(tls,advertisedPhone,phonePort,localSignal,phoneListener(phoneIce));
+                                phoneInvitation=phonePairing.invitation.encode();
+                                status="Invitation ready — keep this phone open while your friend joins";
+                            } catch(Exception e) { reset();error("Could not start phone pairing server; check the port or use manual pairing");return; }
+                        } else if(phonePairing!=null) {
+                            phonePairing.sendAnswer(localSignal);status="Reply sent automatically — connecting";
+                        }
+                    }
+                    changed();
                 } catch (IllegalArgumentException e) { reset(); error("Local signaling failed validation"); }
             }); }
             @Override public void onFrame(boolean file, byte[] bytes) {
@@ -274,11 +323,11 @@ public final class ChatSession {
     public void clearHistory() { execute(() -> { historyGeneration++;reset();database.clearHistory(trust.trusted()); refreshHistory(); }); }
     public void clearEverything() { execute(() -> { historyGeneration++;reset();trust.clear();database.clearAll();identity.reset();localFingerprint="";history=java.util.Collections.emptyList();changed(); }); }
     void networkChanged() { execute(() -> {
-        if (transport!=null) { reset();error("Network changed — reconnect manually with fresh signaling"); }
+        if (transport!=null || phonePairingActive) { reset();error("Network changed — reconnect manually with fresh signaling"); }
     }); }
     private final Runnable backgroundClose=this::expireBackground;
     private void expireBackground() {
-        if (foregroundPolicy.expired(SystemClock.elapsedRealtime()) && transport!=null) {
+        if (foregroundPolicy.expired(SystemClock.elapsedRealtime()) && (transport!=null || phonePairingActive)) {
             reset();error("Disconnected after background grace — pair again");
         }
     }
@@ -288,7 +337,7 @@ public final class ChatSession {
     }); }
     public void foreground() { execute(() -> {
         worker.removeCallbacks(backgroundClose);
-        if (foregroundPolicy.foreground(SystemClock.elapsedRealtime()) && transport!=null) {
+        if (foregroundPolicy.foreground(SystemClock.elapsedRealtime()) && (transport!=null || phonePairingActive)) {
             reset();error("Background session expired — pair again");
         }
     }); }
@@ -312,7 +361,12 @@ public final class ChatSession {
         String text=out.toString("UTF-8");main.post(() -> result.accept(text));
     }); }
     public void disconnect() { execute(() -> { reset(); changed(); }); }
-    private void reset() {
+    private void reset() { reset(false); }
+    private void reset(boolean keepPhone) {
+        if(!keepPhone) {
+            phoneGeneration++;if(phonePairing!=null)phonePairing.close();phonePairing=null;
+            phoneInvitation="";phonePairingActive=false;advertisedPhone="";phoneIce=null;
+        }
         WebRtcTransport previous=transport;transport=null;
         String peer=remoteFingerprint;
         worker.removeCallbacks(tick);protocol=null;

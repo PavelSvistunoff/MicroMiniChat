@@ -43,3 +43,13 @@ approved TURN. Add relay-only UDP, TCP and TLS passes on two independent network
 invalid/expired credentials, TLS failure and unreachable-server cases. All remain
 **untested**: no deployed TURN endpoint/credentials or attached physical phones are
 available. The screenshot records failure only; its underlying cause is not proven.
+
+
+## Phone-hosted pairing source update
+
+The latest user choice is a creator-phone listener, accepting public-IP and forwarding
+limitations. Emulator loopback and two-app-UID checks do not satisfy the matrix’s
+separate-network hardware cases. Public IPv4 TCP forwarding to the phone, global IPv6
+with inbound firewall permission, CGNAT failure and mobile OEM background behavior all
+remain **untested**. TURN only affects WebRTC and cannot make this listener reachable.
+See PHONE_PAIRING.md for setup and PHONE_PAIRING_SMOKE.json for any signed emulator evidence.
