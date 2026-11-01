@@ -1,0 +1,14 @@
+[
+  {
+    "apk": "app-release-unsigned.apk",
+    "apk_bytes": 4160,
+    "sha256": "92e31258aeed7942d3074ae2b790423bb9dac342e879e89f4245a37c3a717bc3",
+    "native_libraries": []
+  },
+  {
+    "apk": "app-debug.apk",
+    "apk_bytes": 10220,
+    "sha256": "26f89b5bd27d7f8261bee9df25743b6f2e390b236670d3a2b01b0dac72992450",
+    "native_libraries": []
+  }
+]

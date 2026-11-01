@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <provider android:name="io.github.pavelsvistunoff.microminichat.TestDocumentsProvider"
+            android:authorities="io.github.pavelsvistunoff.microminichat.test.documents"
+            android:exported="true" android:grantUriPermissions="true" android:permission="android.permission.MANAGE_DOCUMENTS" />
+    </application>
+</manifest>

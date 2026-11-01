@@ -1,0 +1,77 @@
+[
+  {
+    "apk": "probe-arm64-v8a-release-unsigned.apk",
+    "apk_bytes": 12285538,
+    "sha256": "ca446291e3185ec6565721c177a998290503d247be5a5ea64e4a8493010416b5",
+    "native_libraries": [
+      {
+        "path": "lib/arm64-v8a/libjingle_peerconnection_so.so",
+        "compressed_bytes": 12266048,
+        "uncompressed_bytes": 12266048
+      }
+    ]
+  },
+  {
+    "apk": "probe-armeabi-v7a-release-unsigned.apk",
+    "apk_bytes": 6811312,
+    "sha256": "34d26fb02b814a1ea45823cf9628027daceff5130675ef9f8c6094c8803860f4",
+    "native_libraries": [
+      {
+        "path": "lib/armeabi-v7a/libjingle_peerconnection_so.so",
+        "compressed_bytes": 6791820,
+        "uncompressed_bytes": 6791820
+      }
+    ]
+  },
+  {
+    "apk": "probe-universal-release-unsigned.apk",
+    "apk_bytes": 48047865,
+    "sha256": "9ae640bdaf4e7d96d3289413e90346f0e758ed512a82cc6c24dc09641e1786d7",
+    "native_libraries": [
+      {
+        "path": "lib/arm64-v8a/libjingle_peerconnection_so.so",
+        "compressed_bytes": 12266048,
+        "uncompressed_bytes": 12266048
+      },
+      {
+        "path": "lib/armeabi-v7a/libjingle_peerconnection_so.so",
+        "compressed_bytes": 6791820,
+        "uncompressed_bytes": 6791820
+      },
+      {
+        "path": "lib/x86/libjingle_peerconnection_so.so",
+        "compressed_bytes": 12798344,
+        "uncompressed_bytes": 12798344
+      },
+      {
+        "path": "lib/x86_64/libjingle_peerconnection_so.so",
+        "compressed_bytes": 16144848,
+        "uncompressed_bytes": 16144848
+      }
+    ]
+  },
+  {
+    "apk": "probe-x86-release-unsigned.apk",
+    "apk_bytes": 12817828,
+    "sha256": "d41acb2ff12637085155867fdc366865a8b784eb539a531bf961eb3cbbe89c45",
+    "native_libraries": [
+      {
+        "path": "lib/x86/libjingle_peerconnection_so.so",
+        "compressed_bytes": 12798344,
+        "uncompressed_bytes": 12798344
+      }
+    ]
+  },
+  {
+    "apk": "probe-x86_64-release-unsigned.apk",
+    "apk_bytes": 16164335,
+    "sha256": "02b337873c2cce8fb6309e8122bd2553cf5313f9f6b3902d76e42aa5356c6ada",
+    "native_libraries": [
+      {
+        "path": "lib/x86_64/libjingle_peerconnection_so.so",
+        "compressed_bytes": 16144848,
+        "uncompressed_bytes": 16144848
+      }
+    ]
+  }
+]

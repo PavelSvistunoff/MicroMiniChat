@@ -1,0 +1,12 @@
+/.gradle/
+/.tooling/
+/local.properties
+/.idea/
+**/build/
+*.iml
+*.jks
+*.keystore
+__pycache__/
+*.pyc
+/.release-signing/
+/release/

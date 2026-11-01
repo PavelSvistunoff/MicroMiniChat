@@ -1,0 +1,58 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'io.github.pavelsvistunoff.microminichat'
+    if (project.hasProperty('qaPeer')) layout.buildDirectory = rootProject.layout.projectDirectory.dir('build/qa-peer')
+    compileSdk 35
+    sourceSets.main.assets.srcDir rootProject.file('third_party/webrtc')
+    defaultConfig {
+        applicationId project.hasProperty('qaPeer') ? 'io.github.pavelsvistunoff.microminichat.qapeer' : 'io.github.pavelsvistunoff.microminichat'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '0.0.1'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+    signingConfigs {
+        release {
+            def path=System.getenv('MMC_RELEASE_STORE')
+            if (path) {
+                if (!System.getenv('MMC_RELEASE_PASSWORD')) throw new GradleException('Release signing password is not configured')
+                storeFile rootProject.file(path)
+                storePassword System.getenv('MMC_RELEASE_PASSWORD')
+                keyAlias 'microminichat-release'
+                keyPassword System.getenv('MMC_RELEASE_PASSWORD')
+            }
+        }
+    }
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+            universalApk true
+        }
+    }
+    buildTypes {
+        release {
+            // Keep qualified APK hashes stable across the source commit/tag; avoid stale precommit VCS attribution.
+            vcsInfo.include = false
+            if (System.getenv('MMC_RELEASE_STORE')) signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    lint { abortOnError true }
+}
+
+dependencies {
+    implementation 'io.github.webrtc-sdk:android:150.7871.04'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'junit:junit:4.13.2'
+}

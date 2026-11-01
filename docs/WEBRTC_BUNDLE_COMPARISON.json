@@ -1,0 +1,45 @@
+{
+  "date": "2026-11-01",
+  "release_tag": "m150.7871.04",
+  "declared_source_revision": "a545de45259b47dfac5f3635863e47cb601f1bb2",
+  "bundle_aar_sha256": "d07dddeb5c56e7d7616dcbc80da6bd49a2559aee8ee6bc5d836f92a6465ebd54",
+  "maven_aar_sha256": "1872dda4e3bf7d6ea6f7c6e11861332081c57081a1e62fc82fab72415c69c84c",
+  "entries": [
+    {
+      "entry": "AndroidManifest.xml",
+      "bundle_sha256": "940cc91a97635746cff2dd05bdeadab7a3f96a1860c5a46bb5c8f4fd37c220a3",
+      "maven_sha256": "940cc91a97635746cff2dd05bdeadab7a3f96a1860c5a46bb5c8f4fd37c220a3",
+      "match": true
+    },
+    {
+      "entry": "classes.jar",
+      "bundle_sha256": "4b157f532fdcc9efb05d8db08d03c745cbfb957b4ff59746906caff916bd9b7a",
+      "maven_sha256": "dd94491965e838731b7a37bbabd87e06ef4ccc4ca1310dcd1a0385ed7f10e593",
+      "match": false
+    },
+    {
+      "entry": "jni/arm64-v8a/libjingle_peerconnection_so.so",
+      "bundle_sha256": "e465c65a14fcd10ebb74edacbf404c3245e6e043a89c2bf4ded67f2701246664",
+      "maven_sha256": "2b561520298d9fec3e216baf58a53fbddf4a46dfd247880cbc3821875ed20200",
+      "match": false
+    },
+    {
+      "entry": "jni/armeabi-v7a/libjingle_peerconnection_so.so",
+      "bundle_sha256": "15cffe4bcb30a535816109c01e1d3eee19ec7031ebd584fb895c4be1fe62dd1d",
+      "maven_sha256": "5415e7a02ce83e983329575e7c2e46b8ced6c75baea3c41aa52b5699ccb54eda",
+      "match": false
+    },
+    {
+      "entry": "jni/x86/libjingle_peerconnection_so.so",
+      "bundle_sha256": "f28597add20f1b5967b78fd50bae41f28f9012d5185493b48b6d4330eb6e3565",
+      "maven_sha256": "9a532ef72dcda8b4b9874d4f578dbd3a5eb18bce01f9f91bee883bc0962dce3c",
+      "match": false
+    },
+    {
+      "entry": "jni/x86_64/libjingle_peerconnection_so.so",
+      "bundle_sha256": "f0a523fa7df58e49405e5caa190802039f36498586e0c6bf64636d5fe43474cf",
+      "maven_sha256": "b87bbb6d6c81c50f04538cd809575de633a789cc3555af2c5eb6ec414b148908",
+      "match": false
+    }
+  ]
+}

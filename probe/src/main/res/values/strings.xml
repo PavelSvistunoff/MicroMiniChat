@@ -1,0 +1,5 @@
+<resources>
+    <string name="probe_warning">M02 EXPERIMENT — no peer identity verification. Synthetic bytes only. SDP reveals network addresses; share through a trusted channel. Leaving this screen closes the session. No TURN or signaling service.</string>
+    <string name="disconnected">DISCONNECTED</string>
+    <string name="roundtrip_ok">SYNTHETIC_ROUNDTRIP_OK — unauthenticated</string>
+</resources>

@@ -1,0 +1,8 @@
+* text=auto
+*.sh text eol=lf
+gradlew text eol=lf
+*.bat text eol=crlf whitespace=cr-at-eol
+*.jar binary
+
+# Preserve upstream notice formatting; do not edit vendor license text for whitespace.
+third_party/** -whitespace

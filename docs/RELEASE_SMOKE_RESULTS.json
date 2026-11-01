@@ -1,0 +1,12 @@
+{
+  "environment": "API 35 arm64 emulator; two signed release app UIDs; cached-app freezer disabled for transport QA",
+  "physical_hardware": false,
+  "cold_start_total_ms": 106,
+  "release_native_pairing": true,
+  "mutual_fingerprint_verification": true,
+  "cross_process_message_delivered": true,
+  "history_survives_force_stop": true,
+  "identity_survives_force_stop": true,
+  "no_automatic_reconnect_after_force_stop": true,
+  "all_runtime_entries_identical_after_vcs_metadata_exclusion": true
+}

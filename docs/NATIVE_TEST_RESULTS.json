@@ -1,0 +1,28 @@
+{
+  "date": "2026-11-01",
+  "physical_hardware": false,
+  "suites": [
+    {
+      "module": "app",
+      "environment": "AOSP API 35 arm64 emulator; emulator 37.2.13",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "test_cases": [
+        "testManifestHasNoDangerousPermissionsOrBackup",
+        "testLaunchAndRecreate"
+      ]
+    },
+    {
+      "module": "probe",
+      "environment": "AOSP API 35 arm64 emulator; emulator 37.2.13",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "test_cases": [
+        "nativeDataChannelRoundTripAndRepeatCleanup",
+        "malformedOfferFailsAndDisposalIsIdempotent"
+      ]
+    }
+  ]
+}

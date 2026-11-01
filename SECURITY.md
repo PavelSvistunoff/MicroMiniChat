@@ -1,0 +1,66 @@
+# Security Model — 0.0.1 Preview
+
+## Guarantees and limits
+
+WebRTC DTLS encrypts/authenticates transport records; the app binds them to a persistent
+peer certificate that the human explicitly verifies. This is not an independent security
+audit or a guarantee against compromised endpoints. Physical-device/network acceptance
+was explicitly deferred; read `docs/VALIDATION.md` before relying on a preview build.
+
+Protect message/file contents in transit, peer continuity, private keys at rest and
+application retry integrity against network observers, hostile signaling, replay,
+malformed data and hostile peers. Peers/STUN/network operators can observe addresses,
+timing and volume. Rooted/compromised devices, malicious keyboards, screenshots by
+other means, coercion and recipients copying data are outside protection.
+
+## Persistent identity and trust
+
+Generate an ECDSA WebRTC DTLS certificate with the established native implementation.
+Persist the same certificate/key and use its SHA-256 DER-certificate fingerprint.
+Require independent comparison before first trust; a fingerprint sent only with the
+same untrusted SDP is insufficient. Save explicit trust, block changed fingerprints,
+and bind the confirmation button to the exact fingerprint shown. libwebrtc checks
+SDP fingerprints against the live DTLS certificate. Conflicting/weak fingerprints
+and additional media sections are rejected.
+
+This follows [RFC 8122](https://www.rfc-editor.org/rfc/rfc8122.html) fingerprint semantics
+and [RFC 8842](https://www.rfc-editor.org/rfc/rfc8842.html) DTLS/SDP behavior. No custom
+cryptographic algorithm/signing handshake or additional content-encryption layer is
+introduced. A fresh session ID is echoed in DTLS-authenticated HELLO frames. Standard
+DTLS protects network replay; durable IDs/hash receipts protect application retries.
+
+The WebRTC API needs PEM rather than a Keystore signing handle. AES-256-GCM wraps
+that material at rest with a nonexportable Android Keystore key and fresh provider nonce.
+No plaintext private key is written to disk. Unwrapped material exists in Java/native
+memory while active; hardware backing of the identity is not claimed. Corrupt/missing
+keys and expired certificates fail closed. Certificates last one year; explicit reset
+changes identity, deletes local metadata/history and requires reverification.
+
+## Input, storage and files
+
+Bound encoded and decoded payloads before allocation; strict UTF-8, lengths, versions,
+roles, session context and sequence validation. No Java object deserialization.
+Random UUIDs use the platform secure generator. Incoming queues and file worker count
+are bounded. Known TURN relay candidates are rejected. Manual signaling intentionally
+allows ICE checks to supplied network addresses; do not apply untrusted offers casually.
+
+History is app-private SQLite, not separately encrypted against a compromised/unlocked
+OS. Receipt/dedupe state commits before ACK. History deletion keeps minimal hash/ID
+receipts; delete-all rotates identity too. Backups/cloud and device transfers are
+excluded. Flash forensic erasure is not promised. App logs contain no text, SDP,
+addresses, key material or file contents; native tracing/log injection is disabled.
+
+User files use SAF content URIs only, explicit destination creation and sanitized
+metadata. The app never auto-opens received files. Verify size/SHA-256 before marking
+complete; close streams and attempt partial deletion on failure/cancel. Providers can
+block or refuse deletion; report manual cleanup rather than claiming success. After
+process death, metadata marks interruption and the user reselects/restarts from zero.
+
+## Dependencies and reporting
+
+Runtime WebRTC and build artifacts are checksum-pinned. Publisher notices are retained
+and embedded; JNI names/callbacks are explicitly kept during shrinking. Native source/
+binary reproducibility and a complete independent vulnerability audit are not claimed;
+the rejected alternative bundle and evidence are documented in `docs/WEBRTC_DEPENDENCY.md`.
+No analytics/cloud/relay fallback. Report security issues privately through a channel
+agreed with the maintainer; no dedicated contact or response-time promise is configured.

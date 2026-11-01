@@ -1,0 +1,10 @@
+{
+  "environment": "API 35 arm64 emulator; debug instrumentation; two peers in one process",
+  "physical_hardware": false,
+  "in_process_pairing_ms": 356,
+  "idle_sample_ms": 10002,
+  "process_cpu_ms": 29,
+  "process_pss_kib": 42138,
+  "uid_rx_bytes_delta": 2774,
+  "uid_tx_bytes_delta": 2774
+}

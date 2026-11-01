@@ -1,0 +1,55 @@
+{
+  "date": "2026-11-01",
+  "physical_device_acceptance": "explicitly deferred by user",
+  "suites": [
+    {
+      "scope": "app JVM",
+      "name": "io.github.pavelsvistunoff.microminichat.ProtocolTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "scope": "app JVM",
+      "name": "io.github.pavelsvistunoff.microminichat.SignalTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "scope": "app JVM",
+      "name": "io.github.pavelsvistunoff.microminichat.FileOfferTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "scope": "app JVM",
+      "name": "io.github.pavelsvistunoff.microminichat.ForegroundPolicyTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "scope": "app JVM",
+      "name": "io.github.pavelsvistunoff.microminichat.TransportPolicyTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "scope": "probe JVM",
+      "name": "io.github.pavelsvistunoff.microminichat.probe.ProbeRulesTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "scope": "app emulator",
+      "name": "io.github.pavelsvistunoff.microminichat.DatabaseTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+[
+  {
+    "apk": "microminichat-0.0.1-arm64-v8a.apk",
+    "apk_bytes": 12563657,
+    "sha256": "199e2e84f1fed629833123bdb1c1e74d2171675511ab6f55e4acdb797f32fc21",
+    "native_libraries": [
+      {
+        "path": "lib/arm64-v8a/libjingle_peerconnection_so.so",
+        "compressed_bytes": 12266048,
+        "uncompressed_bytes": 12266048
+      }
+    ]
+  },
+  {
+    "apk": "microminichat-0.0.1-armeabi-v7a.apk",
+    "apk_bytes": 7089431,
+    "sha256": "980d80c1be5e503cce53e4fe5b2118f37c0d140bffd724cc0845610a1d634957",
+    "native_libraries": [
+      {
+        "path": "lib/armeabi-v7a/libjingle_peerconnection_so.so",
+        "compressed_bytes": 6791820,
+        "uncompressed_bytes": 6791820
+      }
+    ]
+  },
+  {
+    "apk": "microminichat-0.0.1-x86.apk",
+    "apk_bytes": 13095947,
+    "sha256": "a7bd1c509c5515d575715a1a25e587fbdaf1133f44a5accfeb0bdc9284135b06",
+    "native_libraries": [
+      {
+        "path": "lib/x86/libjingle_peerconnection_so.so",
+        "compressed_bytes": 12798344,
+        "uncompressed_bytes": 12798344
+      }
+    ]
+  },
+  {
+    "apk": "microminichat-0.0.1-x86_64.apk",
+    "apk_bytes": 16442454,
+    "sha256": "0b602925279e14a741f656d69b980296c6e3f8ffd6a77fa2f51c419e7ef1e31e",
+    "native_libraries": [
+      {
+        "path": "lib/x86_64/libjingle_peerconnection_so.so",
+        "compressed_bytes": 16144848,
+        "uncompressed_bytes": 16144848
+      }
+    ]
+  },
+  {
+    "apk": "microminichat-0.0.1-universal.apk",
+    "apk_bytes": 48325984,
+    "sha256": "c7623420f3f5ae8de0aebf53f3405fee3a19903e6eee0ba270f2e603910e9bef",
+    "native_libraries": [
+      {
+        "path": "lib/arm64-v8a/libjingle_peerconnection_so.so",
+        "compressed_bytes": 12266048,
+        "uncompressed_bytes": 12266048
+      },
+      {
+        "path": "lib/armeabi-v7a/libjingle_peerconnection_so.so",
+        "compressed_bytes": 6791820,
+        "uncompressed_bytes": 6791820
+      },
+      {
+        "path": "lib/x86/libjingle_peerconnection_so.so",
+        "compressed_bytes": 12798344,
+        "uncompressed_bytes": 12798344
+      },
+      {
+        "path": "lib/x86_64/libjingle_peerconnection_so.so",
+        "compressed_bytes": 16144848,
+        "uncompressed_bytes": 16144848
+      }
+    ]
+  }
+]
