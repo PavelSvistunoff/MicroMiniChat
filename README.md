@@ -13,7 +13,7 @@ in [validation](docs/VALIDATION.md). **Physical-device and internet-network acce
 was explicitly deferred. This is an early preview, not a universal-connectivity or
 independent security-audit claim.** See [release notes](RELEASE_NOTES.md).
 
-Signed APKs are prepared under `release/0.0.1/` locally. Published builds belong on
+Signed APKs and checksums are tracked in [release/0.0.1/](release/0.0.1/). Published builds belong on
 the repository's [Releases page](https://github.com/PavelSvistunoff/MicroMiniChat/releases).
 Prefer the arm64-v8a APK for modern phones; universal includes all four ABIs.
 Android 8/API 26 or later is the development minimum; runtime testing currently

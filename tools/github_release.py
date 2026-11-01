@@ -82,7 +82,13 @@ if __name__=='__main__':
     if not options.publish:raise SystemExit(0)
     if git('branch','--show-current')!='main' or git('status','--porcelain'):raise SystemExit('Release requires a clean main checkout')
     commit=git('rev-parse','HEAD')
-    if git('rev-parse',TAG+'^{commit}')!=commit:raise SystemExit('Release tag does not match HEAD')
+    source_commit=git('rev-parse',TAG+'^{commit}')
+    subprocess.run(['git','merge-base','--is-ancestor',source_commit,commit],cwd=ROOT,check=True)
+    allowed_files={'.gitignore','.gitattributes','AGENTS.md','README.md','RELEASE_NOTES.md',
+                   'tools/github_release.py'}
+    changed=git('diff','--name-only',source_commit,commit).splitlines()
+    if any(path not in allowed_files and not path.startswith(('docs/','release/0.0.1/')) for path in changed):
+        raise SystemExit('Changes after the release tag must contain only release artifacts, documentation or publisher configuration')
     if api(token,'/repos/'+REPO+'/commits/main')['sha']!=commit:raise SystemExit('Remote main does not match reviewed HEAD')
     files=sorted((ROOT/'release/0.0.1').glob('*.apk'))
     checksums=ROOT/'release/0.0.1/SHA256SUMS'
@@ -93,7 +99,7 @@ if __name__=='__main__':
     existing=next((release for release in releases if release['tag_name']==TAG),None)
     if existing and not existing['draft']:raise SystemExit('A published release already exists; refusing to replace it')
     release=existing or api(token,'/repos/'+REPO+'/releases','POST',{
-        'tag_name':TAG,'target_commitish':commit,'name':'MicroMiniChat 0.0.1 preview',
+        'tag_name':TAG,'target_commitish':source_commit,'name':'MicroMiniChat 0.0.1 preview',
         'body':(ROOT/'RELEASE_NOTES.md').read_text(),'draft':True,'prerelease':True})
     current={asset['name']:asset for asset in release['assets']}
     for path in [*files,checksums]:

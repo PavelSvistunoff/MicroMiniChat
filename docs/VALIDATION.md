@@ -91,7 +91,7 @@ may require manual partial-document cleanup. A terminated app cannot receive mes
 
 ## Publication
 
-Local signed APKs/checksums are under ignored release/0.0.1; the signer remains private
+Signed APKs/checksums are approved for Git tracking under release/0.0.1; the signer remains private
 under .release-signing. Main commit/tag and GitHub publication are separate final steps.
 GitHub access must be authenticated before remote push/asset publication; no token is
 stored or printed by the release helper. See RELEASING.md and RELEASE_NOTES.md.

@@ -3,6 +3,7 @@
 gradlew text eol=lf
 *.bat text eol=crlf whitespace=cr-at-eol
 *.jar binary
+*.apk binary
 
 # Preserve upstream notice formatting; do not edit vendor license text for whitespace.
 third_party/** -whitespace

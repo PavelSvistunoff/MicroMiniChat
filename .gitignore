@@ -9,4 +9,8 @@
 __pycache__/
 *.pyc
 /.release-signing/
-/release/
+/release/*
+!/release/0.0.1/
+/release/0.0.1/*
+!/release/0.0.1/*.apk
+!/release/0.0.1/SHA256SUMS

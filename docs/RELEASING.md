@@ -28,7 +28,7 @@ Run the README checks. Verify APKs with Android build-tools `apksigner verify`; 
 INTERNET/ACCESS_NETWORK_STATE permissions, backup exclusions, and absence of the debug
 DocumentsProvider. Keep JNI callbacks under org.webrtc and org.jni_zero during shrinking.
 
-Collect the four per-ABI APKs and universal APK under ignored `release/0.0.1/`, name
+Collect the four per-ABI APKs and universal APK under the explicitly approved tracked directory `release/0.0.1/`, name
 them `microminichat-0.0.1-ABI.apk`, and compute SHA256SUMS. Resource/size evidence belongs
 in `docs/`; raw SDP, private keys and user-content logs do not.
 
@@ -41,6 +41,8 @@ This is not proof of physical-network or background-delivery behavior.
 ## Main commit and GitHub publication
 
 Review changes, commit to main, create annotated tag `v0.0.1`, then push main and tag.
+Keep the source tag unchanged when following it with an artifact/documentation-only commit.
+The publisher permits only those changes after the tag and rejects runtime/build changes.
 Existing GitHub credentials are required; never paste access tokens into chat.
 `python3 tools/github_release.py --check` only verifies access. After a clean reviewed
 main/tag are pushed, `--publish` creates a draft preview, uploads five APKs/checksums,

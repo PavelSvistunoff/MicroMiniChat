@@ -44,6 +44,8 @@ Read SPEC, ARCHITECTURE, SECURITY and PROTOCOL before changing these boundaries.
 
 Use concise imperative commit subjects. PRs explain behavior, validation and material
 limits; link issues and UI evidence when relevant. Never commit SDKs, generated output,
-IDE settings, signing keys/passwords or sensitive logs. Preserve GPL/third-party notices.
+IDE settings, signing keys/passwords or sensitive logs. The user explicitly authorized
+tracking signed `release/0.0.1/*.apk` and `SHA256SUMS`; this is the sole generated-output
+exception. Preserve GPL/third-party notices.
 Physical-network gaps require a clearly labeled preview; no universal connectivity,
 permanent background execution or terminated-app delivery promises.
