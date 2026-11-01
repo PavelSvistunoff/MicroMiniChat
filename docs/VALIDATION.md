@@ -127,6 +127,26 @@ between real phones on different networks. This does not establish the failure's
   running tests; the disposable test installation was replaced and the rerun passed.
 
 Successful TURN allocation, TCP/TLS relay transfer, real two-network connectivity,
-server TLS/credential failure cases and installed signed-preview UI smoke remain
+server TLS/credential failure cases and full two-peer signed-preview UI smoke remain
 untested. No relay is deployed and no TURN hostname/credentials were supplied.
 The 0.0.1 signed UI smoke above applies only to the original release.
+
+
+## Guided pairing UI update (0.0.2-preview)
+
+Start/Join choices replace raw offer/answer controls. Share/Copy actions hide outgoing
+SDP, incoming Sharesheet text is validated/prefilled for explicit acceptance, connection
+settings are collapsed and fingerprints appear after connection. No transport protocol,
+external default server, credential persistence or trust shortcut was introduced.
+
+Validation: 20 app JVM tests, 21 API 35 arm64 emulator tests (three new UI interactions),
+six Python host checks and Android lint pass. Signed release/R8 builds pass. Five local
+preview APKs were repackaged with matching signer, permissions, fixture exclusions and
+64-bit alignment checks; TURN_PREVIEW_APKS.json contains current sizes/checksums.
+A fresh installed signed arm64 preview passed launch → Start chat → native offer →
+Share invitation UI smoke. This is not a two-device internet or relay test. The original
+0.0.1 signed artifacts remain unchanged; the preview is not published to GitHub.
+
+The existing release_smoke.py harness remains specific to the original 0.0.1 UI;
+it has not been migrated for full two-peer guided-preview UI automation. Real-phone
+usability, relay allocation and real internet-network acceptance remain pending.

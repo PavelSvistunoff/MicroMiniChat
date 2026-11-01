@@ -14,7 +14,7 @@ Bandwidth/hosting costs and server administration are additional requirements.
 ## Configure both phones
 
 Obtain a TURN endpoint and credentials from your own server or chosen provider.
-In **Pair / verify**, enter the TURN URL, username and password on both phones:
+In **Pair / verify → Connection settings**, enter the TURN URL, username and password on both phones:
 
 - `turn:relay.example.org:3478?transport=udp` for ordinary UDP access.
 - `turn:relay.example.org:3478?transport=tcp` when client UDP is blocked.

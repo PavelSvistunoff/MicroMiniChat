@@ -4,4 +4,13 @@
     <item name="attach" type="id" />
     <item name="messages" type="id" />
     <item name="status" type="id" />
+    <item name="pair_step" type="id" />
+    <item name="pair_start" type="id" />
+    <item name="pair_join" type="id" />
+    <item name="pair_share" type="id" />
+    <item name="pair_input" type="id" />
+    <item name="pair_connect" type="id" />
+    <item name="pair_verify" type="id" />
+    <item name="pair_settings" type="id" />
+    <item name="pair_network" type="id" />
 </resources>

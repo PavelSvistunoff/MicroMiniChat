@@ -256,3 +256,30 @@ real relay-only UDP/TCP/TLS, invalid credentials/certificates and network-loss t
 **Known limitations:** One endpoint per pairing, no automatic credential refresh or
 server provisioning, credentials re-entered after dialog dismissal; original APKs lack
 TURN support. No universal connectivity or remote internet test result is claimed.
+
+
+## M14 — Guided Pairing
+
+**Status:** Implemented; 21 emulator tests, host/build/lint and signed offer UI smoke pass.
+
+**Scope:** Simplify the existing two-message manual exchange without a signaling backend.
+
+**Dependencies:** M04 manual signaling, M05 verification and M13 optional TURN.
+
+**Implementation tasks:** Start/Join choices, contextual step guidance, Share/Copy
+invitation/reply buttons, Paste & connect, collapsed connection settings, fingerprint
+controls only after connection. Validate Sharesheet input and require explicit Connect.
+
+**Acceptance criteria:** Both roles have clear actions; raw outgoing SDP is hidden;
+no automatic network access/trust from incoming shares; no default external service.
+
+**Unit tests:** Existing bounded signaling/configuration tests remain required.
+
+**Integration tests:** Guided role selection, collapsed settings, explicit Sharesheet
+acceptance and native offer-to-share UI on the API 35 emulator; existing transport,
+identity, persistence and file-transfer regressions.
+
+**Known limitations:** Still requires invitation and reply through another messenger;
+TURN configuration/credentials remain necessary on restrictive networks. No hosted
+signaling, short invitation codes or single-SDP QR assumption. Real-phone UX and
+internet relay acceptance remain pending.

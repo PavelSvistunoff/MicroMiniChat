@@ -24,17 +24,24 @@ covers an API 35 arm64 emulator only. No Play Store eligibility is claimed.
 For restrictive internet networks, see [TURN setup](docs/TURN.md). The checked-in
 0.0.1 APKs do not include the new TURN source changes.
 
-1. Keep both apps open. Open **Pair / verify**. Leave STUN blank for host candidates,
-   or explicitly enter a public endpoint you consent to use, such as
-   `stun:stun.l.google.com:19302`. No STUN operator is contacted by default.
-2. A creates an offer and copies/shares the completed payload to B. B pastes/applies
-   it, then copies/shares the generated answer back. A applies that answer.
-3. Independently compare the **full peer fingerprint** with the fingerprint shown
-   on the other person's device. Each person confirms the comparison before sending.
-   Do not rely on a fingerprint sent only through the same untrusted signaling path.
-4. Send plain text, or attach a file. The recipient explicitly saves an incoming file
-   through Android's picker. Delivered means a remote application persistence ACK;
-   file completion requires verified SHA-256 and a completion ACK.
+These steps describe the updated `0.0.2-preview` UI; original 0.0.1 uses manual
+offer/answer labels.
+
+1. Keep both apps open and tap **Pair / verify**. Expand **Connection settings**
+   to configure STUN or your authenticated TURN server before connecting. Settings
+   are hidden by default; no external server is selected automatically.
+2. On phone A, tap **Start chat**, then **Share invitation** (or **Copy invitation**).
+   Send it to your friend through a trusted messenger.
+3. On phone B, share that text into MicroMiniChat, or tap **Join chat** and
+   **Paste & connect**. Shared text is prefilled; tap **Connect with pasted text**
+   to accept it. Tap **Share reply** and send the reply back to A.
+4. On phone A, open the shared reply and tap **Connect with pasted text**, or use
+   **Paste & connect**. Each phone shows its next step; raw exported SDP is hidden.
+5. Once connected, tap **Compare fingerprints**. Independently compare the full
+   fingerprints shown on the two devices, then confirm they match on each phone.
+   Never trust fingerprints supplied only through the same untrusted signaling path.
+6. Return to chat to send text or attach files. Delivered means a remote persistence
+   ACK; file completion requires verified SHA-256 and a completion ACK.
 
 STUN is discovery, not a relay. Some NAT/CGNAT/firewall combinations cannot connect
 without TURN; configure your own authenticated TURN endpoint in the updated app. SDP reveals addresses, so treat it as

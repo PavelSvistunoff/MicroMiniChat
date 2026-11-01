@@ -25,9 +25,16 @@ public final class MainActivity extends Activity {
     private TextView identity;
     private TextView pairStatus;
     private LinearLayout fileControls;
-    private TextView exported;
+    private TextView pairStep;
+    private LinearLayout pairChoices, pairShare, pairImport, pairVerify;
+    private Button pairShareButton, pairCopyButton, pairStartButton, pairConnectButton;
+    private EditText pairStun, pairTurn, pairUsername, pairPassword;
+    private CheckBox pairRelayOnly;
+    private boolean joining;
+    private String displayedSignal="";
+    private boolean displayedOffer;
     private EditText imported;
-    private AlertDialog pairing;
+    AlertDialog pairing;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -87,10 +94,11 @@ public final class MainActivity extends Activity {
         TextView view = new TextView(this); view.setText(value); view.setTextIsSelectable(true);
         root.addView(view); return view;
     }
-    private void button(LinearLayout root, String label, Runnable action) {
+    private Button button(LinearLayout root, String label, Runnable action) {
         Button button = new Button(this); button.setText(label); button.setOnClickListener(v -> action.run());
         if (root.getOrientation()==LinearLayout.HORIZONTAL) root.addView(button,new LinearLayout.LayoutParams(0,-2,1));
         else root.addView(button);
+        return button;
     }
     private EditText input(LinearLayout root, String hint, int limit) {
         EditText view = new EditText(this); view.setHint(hint); view.setMaxLines(5);
@@ -100,9 +108,7 @@ public final class MainActivity extends Activity {
     }
     private void render() {
         status.setText(session.status);
-        if (identity!=null) identity.setText("My fingerprint:\n"+session.localFingerprint+"\nPeer fingerprint:\n"+session.remoteFingerprint);
-        if (pairStatus!=null) pairStatus.setText(session.status);
-        if (exported != null) exported.setText(session.localSignal);
+        renderPairing();
         sendButton.setEnabled(session.ready);
         attachButton.setEnabled(session.ready && session.filesEnabled);
         saveButton.setEnabled(session.ready && session.incomingOffer!=null);
@@ -138,54 +144,111 @@ public final class MainActivity extends Activity {
                     }).show();
         }).setNegativeButton("Close",null).show();
     }
-    private void pair() {
+    void pair() {
         if (pairing != null && pairing.isShowing()) return;
         LinearLayout form = column();
-        text(form, "Signaling reveals network addresses. Exchange it through a trusted channel. Optional TURN relays encrypted traffic through your chosen server; its operator sees addresses and traffic metadata.");
+        pairStep=text(form, "1. Choose who starts"); pairStep.setTextSize(20);pairStep.setId(R.id.pair_step);
         pairStatus=text(form,session.status);
-        identity=text(form,"My fingerprint:\n"+session.localFingerprint+"\nPeer fingerprint:\n"+session.remoteFingerprint);
-        button(form,"Verify peer fingerprint",this::confirmVerify);
-        EditText stun = input(form, "Optional stun:host:port; blank = host candidates only", 300);
-        stun.setText(getPreferences(0).getString("stun", ""));
-        EditText turn = input(form, "Optional TURN URL: turns:host:5349?transport=tcp", 320);
-        EditText username = input(form, "TURN username (not saved)", 512);
-        EditText password = input(form, "TURN password (not saved)", 512);
-        username.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-        password.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        CheckBox relayOnly = new CheckBox(this); relayOnly.setText("Relay only (requires working TURN)"); form.addView(relayOnly);
-        imported = input(form, "Paste offer or answer", Signal.MAX_CHARS);
-        button(form, "Paste", () -> {
-            ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-            ClipData clip = clipboard.getPrimaryClip();
-            if (clip != null && clip.getItemCount() > 0) {
-                CharSequence value = clip.getItemAt(0).getText();
-                if (value != null && value.length() <= Signal.MAX_CHARS) imported.setText(value);
-            }
+        text(form,"Keep both apps open. Exchange invitations through a trusted messenger; they contain network addresses.");
+        pairChoices=column();form.addView(pairChoices);
+        pairStartButton=button(pairChoices,"Start chat",()->submitPairing(true));pairStartButton.setId(R.id.pair_start);
+        button(pairChoices,"Join chat",()->{ joining=true;renderPairing(); }).setId(R.id.pair_join);
+
+        pairShare=column();form.addView(pairShare);
+        pairShareButton=button(pairShare,"Share invitation",this::sharePairing);
+        pairShareButton.setId(R.id.pair_share);
+        pairCopyButton=button(pairShare,"Copy invitation",()->copy(session.localSignal));
+
+        pairImport=column();form.addView(pairImport);
+        imported=input(pairImport,"Paste invitation or reply here",Signal.MAX_CHARS);imported.setMaxLines(3);imported.setId(R.id.pair_input);
+        button(pairImport,"Paste & connect",()->{
+            ClipboardManager clipboard=(ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
+            ClipData clip=clipboard.getPrimaryClip();
+            if (clip==null || clip.getItemCount()==0) { toast("Copy an invitation or reply first");return; }
+            CharSequence value=clip.getItemAt(0).getText();
+            if (value==null || value.length()>Signal.MAX_CHARS) { toast("Invalid or oversized invitation");return; }
+            imported.setText(value);submitPairing(false);
         });
-        button(form, "Create offer", () -> {
-            String endpoint = stun.getText().toString().trim(); getPreferences(0).edit().putString("stun", endpoint).apply();
-            try { session.offer(new io.github.pavelsvistunoff.microminichat.net.IceConfig(endpoint,
-                    turn.getText().toString().trim(), username.getText().toString(), password.getText().toString(), relayOnly.isChecked())); }
-            catch (IllegalArgumentException e) { toast("Invalid ICE settings; TURN needs URL, username and password"); }
+        pairConnectButton=button(pairImport,"Connect with pasted text",()->submitPairing(false));
+        pairConnectButton.setId(R.id.pair_connect);
+
+        pairVerify=column();form.addView(pairVerify);
+        identity=text(pairVerify,"");
+        button(pairVerify,"Compare fingerprints",this::confirmVerify).setId(R.id.pair_verify);
+
+        text(form,"For internet connections, configure discovery or a relay below. No server is selected automatically.");
+        LinearLayout network=column();network.setVisibility(android.view.View.GONE);
+        Button settings=button(form,"Connection settings",()->network.setVisibility(
+                network.getVisibility()==android.view.View.VISIBLE?android.view.View.GONE:android.view.View.VISIBLE));
+        settings.setId(R.id.pair_settings);form.addView(network);network.setId(R.id.pair_network);
+        text(network,"STUN discovers routes. TURN relays encrypted traffic when direct routes fail; its operator sees traffic metadata. Credentials are not saved.");
+        pairStun=input(network,"STUN URL (optional)",300);
+        pairStun.setText(getPreferences(0).getString("stun",""));
+        pairTurn=input(network,"TURN URL (optional)",320);
+        pairUsername=input(network,"TURN username",512);
+        pairPassword=input(network,"TURN password",512);
+        pairUsername.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+        pairPassword.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        pairUsername.setImeOptions(android.view.inputmethod.EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING);
+        pairPassword.setImeOptions(android.view.inputmethod.EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING);
+        pairRelayOnly=new CheckBox(this);pairRelayOnly.setText("Relay only (requires working TURN)");network.addView(pairRelayOnly);
+        button(form,"Start again",()->{ joining=false;imported.setText("");session.disconnect(); });
+        ScrollView scroll=new ScrollView(this);scroll.addView(form);
+        pairing=new AlertDialog.Builder(this).setTitle("Connect to your friend").setView(scroll).setPositiveButton("Back to chat",null).create();
+        pairing.setOnDismissListener(d->{
+            pairPassword.setText("");pairUsername.setText("");
+            imported=null;identity=null;pairStatus=null;pairStep=null;pairing=null;displayedSignal="";joining=false;
+            pairStun=null;pairTurn=null;pairUsername=null;pairPassword=null;pairRelayOnly=null;
+            pairChoices=null;pairShare=null;pairImport=null;pairVerify=null;
         });
-        button(form, "Apply offer / answer", () -> {
-            try { session.apply(imported.getText().toString(), new io.github.pavelsvistunoff.microminichat.net.IceConfig(
-                    stun.getText().toString().trim(), turn.getText().toString().trim(),
-                    username.getText().toString(), password.getText().toString(), relayOnly.isChecked())); }
-            catch (IllegalArgumentException e) { toast("Invalid ICE settings; TURN needs URL, username and password"); }
-        });
-        exported = text(form, session.localSignal); exported.setMaxLines(5);
-        button(form, "Copy local signaling", () -> copy(session.localSignal));
-        button(form, "Share local signaling", () -> {
-            if (session.localSignal.isEmpty()) return;
-            Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, session.localSignal);
-            try { startActivity(Intent.createChooser(send, "Share sensitive signaling")); }
-            catch (ActivityNotFoundException e) { toast("No sharing application available"); }
-        });
-        ScrollView scroll = new ScrollView(this); scroll.addView(form);
-        pairing = new AlertDialog.Builder(this).setTitle("Manual pairing").setView(scroll).setPositiveButton("Close", null).create();
-        pairing.setOnDismissListener(d -> { password.setText(""); username.setText(""); exported = null; imported = null; identity=null;pairStatus=null;pairing = null; }); pairing.show();
-        pairing.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        pairing.show();renderPairing();
+        pairing.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN|WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    }
+
+    private void renderPairing() {
+        if (pairing==null || pairStep==null) return;
+        pairStatus.setText(session.status);
+        boolean hasSignal=!session.localSignal.isEmpty();
+        if (hasSignal && !session.localSignal.equals(displayedSignal)) {
+            displayedSignal=session.localSignal;
+            try { displayedOffer=Signal.decode(displayedSignal).offer; }
+            catch (IllegalArgumentException e) { displayedSignal="";hasSignal=false; }
+        }
+        boolean busy=session.status.equals("Gathering connection details") || session.status.equals("Connecting");
+        pairChoices.setVisibility(!session.open && !hasSignal && !joining?android.view.View.VISIBLE:android.view.View.GONE);
+        pairStartButton.setEnabled(!busy);
+        pairShare.setVisibility(hasSignal && !session.open?android.view.View.VISIBLE:android.view.View.GONE);
+        pairShareButton.setText(displayedOffer?"Share invitation":"Share reply");
+        pairCopyButton.setText(displayedOffer?"Copy invitation":"Copy reply");
+        pairImport.setVisibility(!session.open && (hasSignal?displayedOffer:joining)?android.view.View.VISIBLE:android.view.View.GONE);
+        pairConnectButton.setEnabled(!busy);
+        imported.setHint(hasSignal && displayedOffer?"Paste your friend’s reply":"Paste your friend’s invitation");
+        pairVerify.setVisibility(session.open?android.view.View.VISIBLE:android.view.View.GONE);
+        identity.setText("Your fingerprint:\n"+session.localFingerprint+"\nFriend’s fingerprint:\n"+session.remoteFingerprint);
+        pairStep.setText(session.open?(session.ready?"Connected — return to chat":session.verified?"Waiting for your friend to verify":"3. Compare fingerprints before chatting")
+                :busy?"Preparing connection — please wait"
+                :hasSignal?(displayedOffer?"2. Send invitation, then paste your friend’s reply":"2. Send this reply back to your friend")
+                :joining?"1. Paste your friend’s invitation":"1. Start a chat or join your friend");
+    }
+
+    private void submitPairing(boolean start) {
+        try {
+            // Validate shared input before changing any connection or network configuration.
+            if (!start) Signal.decode(imported.getText().toString());
+            io.github.pavelsvistunoff.microminichat.net.IceConfig ice=new io.github.pavelsvistunoff.microminichat.net.IceConfig(
+                    pairStun.getText().toString().trim(),pairTurn.getText().toString().trim(),
+                    pairUsername.getText().toString(),pairPassword.getText().toString(),pairRelayOnly.isChecked());
+            getPreferences(0).edit().putString("stun",ice.stun).apply();
+            if (start) { pairStartButton.setEnabled(false);session.offer(ice); }
+            else { pairConnectButton.setEnabled(false);session.apply(imported.getText().toString(),ice); }
+        } catch (IllegalArgumentException e) { toast("Check the invitation and connection settings; TURN needs URL, username and password"); }
+    }
+
+    private void sharePairing() {
+        if (session.localSignal.isEmpty()) return;
+        Intent send=new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,session.localSignal);
+        try { startActivity(Intent.createChooser(send,displayedOffer?"Send chat invitation":"Send chat reply")); }
+        catch (ActivityNotFoundException e) { toast("No sharing application available"); }
     }
     private void confirmVerify() {
         String expected=session.remoteFingerprint;
@@ -206,7 +269,9 @@ public final class MainActivity extends Activity {
         if (!Intent.ACTION_SEND.equals(intent.getAction())) return;
         try {
             String value = intent.getStringExtra(Intent.EXTRA_TEXT);
-            if (value != null && value.length() <= Signal.MAX_CHARS) { pair(); imported.setText(value); }
+            if (value != null && value.length() <= Signal.MAX_CHARS) {
+                Signal.decode(value);pair();joining=true;imported.setText(value);renderPairing();
+            }
             else toast("Invalid or oversized shared signaling");
         } catch (RuntimeException e) { toast("Malformed shared signaling"); }
     }

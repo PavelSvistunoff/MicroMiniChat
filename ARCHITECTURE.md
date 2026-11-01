@@ -48,7 +48,10 @@ if external providers stall. No private payload is sent to diagnostic logging.
   files. File chunks use stop-and-wait application ACKs after provider writes,
   keeping memory bounded at the cost of throughput proportional to network RTT.
 - **Minimal UI:** one chat screen, pairing dialog and necessary settings. No contact
-  list or profile UI. Paging keeps displayed history bounded.
+  list or profile UI. Guided Start/Join pairing hides raw exports and connection
+  settings, labels invitations/replies and defers fingerprint controls until connected.
+  Sharesheet imports require an explicit Connect action; no implicit network contact
+  or trust is granted. Paging keeps displayed history bounded.
 
 ## Background behavior
 

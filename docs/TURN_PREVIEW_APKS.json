@@ -2,32 +2,33 @@
   "version": "0.0.2-preview",
   "version_code": 2,
   "signed": true,
+  "pairing_ui": "guided",
   "internet_relay_tested": false,
   "apks": [
     {
       "apk": "microminichat-0.0.2-preview-arm64-v8a.apk",
-      "bytes": 12563669,
-      "sha256": "137a135bfe55bf35257c213a8e9790670e900b7bfd5257b67880be4fd3f4ada4"
+      "bytes": 12564045,
+      "sha256": "f0bc76006402a61f0c446eda5c6606642eeabf725b48dcee4cc4dc4d281b47f6"
     },
     {
       "apk": "microminichat-0.0.2-preview-armeabi-v7a.apk",
-      "bytes": 7089443,
-      "sha256": "b5b413a4360d39c9fc73dc7caa6eedb79681c819b6cfa572668b1c0cd3edb2d5"
+      "bytes": 7089819,
+      "sha256": "ccf461113330cc5b6591a102a2f2ca2c6fe6a4abe5ca7c9597dd7ee87e41ec2b"
     },
     {
       "apk": "microminichat-0.0.2-preview-x86.apk",
-      "bytes": 13095959,
-      "sha256": "1438f3365175d23ef6e5adaf06baed8184816b6e938469b3f0b164b47eabcbc4"
+      "bytes": 13096335,
+      "sha256": "826e873261308684cce6435fe2cc376a055ab9a77e2ec37f531f2f1018dd26c3"
     },
     {
       "apk": "microminichat-0.0.2-preview-x86_64.apk",
-      "bytes": 16442466,
-      "sha256": "a8f54e04eb40c425e4dba9078344216ad6b698106ba82a291b0cd93aa28d2967"
+      "bytes": 16442842,
+      "sha256": "565d4d2eff93640336b1a431900a6d412b6b80f2c5bdeb6628b2b1579444aee7"
     },
     {
       "apk": "microminichat-0.0.2-preview-universal.apk",
-      "bytes": 48325996,
-      "sha256": "d4ba36b302c5068d35be50ceccc14a4fdf9af1bbe735fc312976d6e1f027fbc8"
+      "bytes": 48326372,
+      "sha256": "29dcdacd418841110339fbdcfa3d211abbc6ed7dffffcb9861b4b2f7b9f5db23"
     }
   ]
 }
