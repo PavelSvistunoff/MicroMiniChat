@@ -37,7 +37,9 @@ Use four-space Java indentation, UpperCamelCase classes, lowerCamelCase methods 
 clear resource names. Native Views/platform APIs are preferred. Keep dependencies
 minimal/pinned; review verification metadata changes. Never log text, SDP, network
 addresses, keys or file contents. Use established cryptography; do not add a new
-handshake. No backend/cloud/signaling/relay service without explicit approval.
+handshake. The user explicitly approved optional TURN on 2026-11-01; keep relay
+configuration opt-in and never commit credentials. No other backend/cloud/signaling
+service without explicit approval.
 Read SPEC, ARCHITECTURE, SECURITY and PROTOCOL before changing these boundaries.
 
 ## Commits and Releases

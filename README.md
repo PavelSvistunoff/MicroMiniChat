@@ -2,7 +2,7 @@
 
 A minimal Android messenger for exactly two people. Text and files travel over
 WebRTC DataChannels; pairing uses copy/paste or Android Sharesheet. No accounts,
-phone numbers, application backend, Firebase, analytics, push, advertising or TURN.
+phone numbers, application backend, Firebase, analytics, push or advertising. Optional user-configured TURN relay support is in development.
 
 ## 0.0.1 preview
 
@@ -21,6 +21,9 @@ covers an API 35 arm64 emulator only. No Play Store eligibility is claimed.
 
 ## Pair and use
 
+For restrictive internet networks, see [TURN setup](docs/TURN.md). The checked-in
+0.0.1 APKs do not include the new TURN source changes.
+
 1. Keep both apps open. Open **Pair / verify**. Leave STUN blank for host candidates,
    or explicitly enter a public endpoint you consent to use, such as
    `stun:stun.l.google.com:19302`. No STUN operator is contacted by default.
@@ -34,8 +37,8 @@ covers an API 35 arm64 emulator only. No Play Store eligibility is claimed.
    file completion requires verified SHA-256 and a completion ACK.
 
 STUN is discovery, not a relay. Some NAT/CGNAT/firewall combinations cannot connect
-without TURN; this app has no relay fallback. SDP reveals addresses, so treat it as
-sensitive. Known relay candidates are rejected. QR is not supported: full SDP may
+without TURN; configure your own authenticated TURN endpoint in the updated app. SDP reveals addresses, so treat it as
+sensitive. Direct mode rejects relay candidates; TURN is explicit opt-in. QR is not supported: full SDP may
 be too large for one code.
 
 Keep the app foreground. Short switches for sharing/pickers have a best-effort

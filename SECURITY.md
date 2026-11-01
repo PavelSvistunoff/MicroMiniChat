@@ -1,4 +1,4 @@
-# Security Model — 0.0.1 Preview
+# Security Model — 0.0.2 Preview (development)
 
 ## Guarantees and limits
 
@@ -41,7 +41,7 @@ changes identity, deletes local metadata/history and requires reverification.
 Bound encoded and decoded payloads before allocation; strict UTF-8, lengths, versions,
 roles, session context and sequence validation. No Java object deserialization.
 Random UUIDs use the platform secure generator. Incoming queues and file worker count
-are bounded. Known TURN relay candidates are rejected. Manual signaling intentionally
+are bounded. Direct mode rejects advertised TURN candidates; explicit TURN configuration allows them. Manual signaling intentionally
 allows ICE checks to supplied network addresses; do not apply untrusted offers casually.
 
 History is app-private SQLite, not separately encrypted against a compromised/unlocked
@@ -62,5 +62,7 @@ Runtime WebRTC and build artifacts are checksum-pinned. Publisher notices are re
 and embedded; JNI names/callbacks are explicitly kept during shrinking. Native source/
 binary reproducibility and a complete independent vulnerability audit are not claimed;
 the rejected alternative bundle and evidence are documented in `docs/WEBRTC_DEPENDENCY.md`.
-No analytics/cloud/relay fallback. Report security issues privately through a channel
+No analytics/cloud database. User-approved TURN is explicit opt-in; credentials are
+held only in memory and never logged or exported. TURN operators observe metadata
+but message/file contents remain protected by peer-verified DTLS. See docs/TURN.md. Report security issues privately through a channel
 agreed with the maintainer; no dedicated contact or response-time promise is configured.

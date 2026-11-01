@@ -3,7 +3,7 @@ package io.github.pavelsvistunoff.microminichat.net;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
-/** Bounds for the disposable raw-SDP experiment, not the product signaling codec. */
+/** Transport bounds and explicit STUN endpoint validation. Product signaling has stricter SDP validation. */
 public final class TransportPolicy {
     public static final int MAX_SDP_BYTES = 256 * 1024;
     public static final int MAX_BUFFERED_BYTES = 256 * 1024;

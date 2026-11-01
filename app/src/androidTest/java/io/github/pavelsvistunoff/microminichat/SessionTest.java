@@ -20,6 +20,19 @@ public final class SessionTest {
         if(verify) { assertFalse(left.ready);assertFalse(right.ready);left.verifyPeer();right.verifyPeer(); }
         waitFor(()->left.ready && right.ready);
     }
+    @Test public void directSessionRejectsUnconsentedRelayOffer() throws Exception {
+        android.content.Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();
+        ChatSession session=new ChatSession(context,"relayconsent"+Long.toHexString(System.nanoTime()));
+        try {
+            String sdp="v=0\r\na=fingerprint:sha-256 "+"AB:".repeat(31)+"AB\r\n"
+                    +"m=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\n"
+                    +"a=candidate:1 1 UDP 1 192.0.2.1 3478 typ relay\r\n";
+            session.apply(new io.github.pavelsvistunoff.microminichat.signal.Signal(true,java.util.UUID.randomUUID(),sdp).encode(),"");
+            waitFor(()->session.status.contains("configure TURN to consent"));
+            assertFalse(session.open);assertTrue(session.localSignal.isEmpty());
+        } finally { session.shutdown(); }
+    }
+
     @Test public void backgroundGraceExpiresWithoutTrustOrHistoryLoss() throws Exception {
         android.content.Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();String suffix=Long.toHexString(System.nanoTime());
         ChatSession left=new ChatSession(context,"bgleft"+suffix,100),right=new ChatSession(context,"bgright"+suffix);

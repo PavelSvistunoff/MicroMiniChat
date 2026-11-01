@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import io.github.pavelsvistunoff.microminichat.net.TransportPolicy;
+import io.github.pavelsvistunoff.microminichat.net.IceConfig;
 import io.github.pavelsvistunoff.microminichat.net.WebRtcTransport;
 import io.github.pavelsvistunoff.microminichat.signal.Signal;
 import java.util.UUID;
@@ -88,23 +89,28 @@ public final class ChatSession {
         try { action.run(); } catch (Exception e) { error("Operation failed; disconnect and retry"); }
     }); }
 
-    public void offer(String stun) { execute(() -> {
+    private boolean relayAllowed;
+    public void offer(String stun) { offer(IceConfig.direct(stun)); }
+    public void offer(IceConfig ice) { execute(() -> {
         reset();
-        if (!TransportPolicy.validStun(stun)) { error("Invalid STUN endpoint"); return; }
+        relayAllowed = ice.allowsRelay();
         offerer = true; sessionId = UUID.randomUUID(); pairingStarted=SystemClock.elapsedRealtime();
-        if (createTransport()) transport.offer(stun);
+        if (createTransport()) transport.offer(ice);
     }); }
 
-    public void apply(String value, String stun) { execute(() -> {
+    public void apply(String value, String stun) { apply(value, IceConfig.direct(stun)); }
+    public void apply(String value, IceConfig ice) { execute(() -> {
         Signal signal;
         try { signal = Signal.decode(value); } catch (IllegalArgumentException e) { error("Invalid or unsupported signaling payload"); return; }
         if (signal.offer) {
             reset();
-            if (!TransportPolicy.validStun(stun)) { error("Invalid STUN endpoint"); return; }
+            relayAllowed = ice.allowsRelay();
+            if (signal.hasRelayCandidates() && !relayAllowed) { error("Peer offers TURN; configure TURN to consent before pairing"); return; }
             offerer = false; sessionId = signal.session; pairingStarted=SystemClock.elapsedRealtime(); remoteFingerprint = signal.fingerprint;
             if (trust.match(remoteFingerprint) == TrustStore.Match.CHANGED) { reset(); error("Peer identity changed — blocked. Verify independently before resetting trust."); return; }
-            if (createTransport()) transport.answer(stun, signal.sdp);
+            if (createTransport()) transport.answer(ice, signal.sdp);
         } else {
+            if (signal.hasRelayCandidates() && !relayAllowed) { error("Peer offers TURN; create a fresh offer with TURN enabled"); return; }
             if (!offerer || transport == null || answerApplied || SystemClock.elapsedRealtime()-pairingStarted>600000 || !signal.session.equals(sessionId)) {
                 error("Answer does not match a pending offer"); return;
             }
@@ -123,14 +129,16 @@ public final class ChatSession {
             @Override public void onState(String state) { if (terminated.get()) return; worker.post(() -> {
                 if (transport != reference[0]) return;
                 if (state.startsWith("FAILED_") || state.equals("DISCONNECTED") || state.equals("CLOSED")) {
-                    reset(); error("Connection lost — reconnect manually ("+state+")"); return;
+                    reset(); error(state.equals("FAILED_TURN_ALLOCATION_FAILED")
+                            ? "TURN allocation failed — check server, credentials and network; create fresh signaling"
+                            : "Connection lost — reconnect manually ("+state+")"); return;
                 }
                 open = state.equals("OPEN");
                 verified = open && trust.match(remoteFingerprint) == TrustStore.Match.VERIFIED;
                 status = open ? (verified ? "Connected — verified peer" : "Connected — verify peer before messaging")
                         : state.equals("GATHERING") ? "Gathering connection details"
                         : state.equals("WAITING_FOR_ANSWER") ? "Offer ready — share it and apply the answer"
-                        : state.equals("CONNECTING") ? "Connecting directly" : state;
+                        : state.equals("CONNECTING") ? "Connecting" : state;
                 if (!open) { protocol = null; ready = false; }
                 if (verified) initializeProtocol();
                 changed();
@@ -311,7 +319,7 @@ public final class ChatSession {
         if (previous!=null) previous.close();
         if (transfers!=null) { transfers.close();transfers=null; }
         incomingOffer=null;filesEnabled=false;fileStatus="";
-        sessionId=null;answerApplied=false;open=false;verified=false;ready=false;
+        relayAllowed=false;sessionId=null;answerApplied=false;open=false;verified=false;ready=false;
         localSignal="";remoteFingerprint="";status="Disconnected";historyBefore=Long.MAX_VALUE;
         if (previous!=null && !peer.isEmpty()) {
             try { database.interrupt(peer); } catch (RuntimeException e) { status="Disconnected — storage recovery failed"; }

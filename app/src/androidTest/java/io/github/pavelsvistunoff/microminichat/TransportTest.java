@@ -11,6 +11,27 @@ import static org.junit.Assert.*;
 
 /** In-process native integration only: not evidence of two-device internet connectivity. */
 public final class TransportTest {
+    @Test public void relayOnlyNeverExportsHostFallbackWhenServerIsUnavailable() throws Exception {
+        CountDownLatch failed=new CountDownLatch(1);
+        AtomicReference<String> result=new AtomicReference<>();
+        AtomicBoolean exported=new AtomicBoolean();
+        WebRtcTransport peer=new WebRtcTransport(InstrumentationRegistry.getInstrumentation().getTargetContext(), null,
+                new WebRtcTransport.Listener() {
+                    @Override public void onState(String value) {
+                        if (value.startsWith("FAILED_")) { result.set(value);failed.countDown(); }
+                    }
+                    @Override public void onLocalSdp(boolean offer, String sdp) { exported.set(true); }
+                    @Override public void onFrame(boolean file, byte[] data) { exported.set(true); }
+                });
+        try {
+            peer.offer(new io.github.pavelsvistunoff.microminichat.net.IceConfig("",
+                    "turn:127.0.0.1:9?transport=tcp","synthetic-user","synthetic-secret",true));
+            assertTrue("Unreachable TURN must fail",failed.await(40,TimeUnit.SECONDS));
+            assertFalse("Relay-only must not export a direct fallback",exported.get());
+            assertTrue(result.get(),result.get().equals("FAILED_TURN_ALLOCATION_FAILED") || result.get().equals("FAILED_GATHER_TIMEOUT"));
+        } finally { peer.close();assertTrue(peer.awaitDisposed(5)); }
+    }
+
     @Test public void malformedOfferFailsAndDisposalIsIdempotent() throws Exception {
         CountDownLatch failed = new CountDownLatch(1);
         AtomicReference<String> state = new AtomicReference<>();

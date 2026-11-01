@@ -30,8 +30,11 @@ public final class SignalTest {
             assertThrows(IllegalArgumentException.class, () -> Signal.decode(payload));
         }
     }
-    @Test public void neverAcceptsAdvertisedTurnRelayCandidates() {
-        assertThrows(IllegalArgumentException.class, () -> Signal.fingerprint(SDP+"a=candidate:1 1 UDP 1 192.0.2.1 1234 typ relay\r\n"));
+    @Test public void acceptsRelayCandidatesButRejectsUnknownTypes() {
+        Signal relay = new Signal(true, UUID.randomUUID(), SDP+"a=candidate:1 1 UDP 1 192.0.2.1 1234 typ relay\r\n");
+        assertTrue(Signal.decode(relay.encode()).hasRelayCandidates());
+        assertFalse(new Signal(true, UUID.randomUUID(), SDP).hasRelayCandidates());
+        assertThrows(IllegalArgumentException.class, () -> Signal.fingerprint(SDP+"a=candidate:1 1 UDP 1 192.0.2.1 1234 typ unknown\r\n"));
         assertEquals(FINGERPRINT,Signal.fingerprint(SDP+"a=candidate:1 1 UDP 1 192.0.2.1 1234 typ host\r\n"));
     }
     @Test public void rejectsFingerprintAmbiguityAndExtraMedia() {

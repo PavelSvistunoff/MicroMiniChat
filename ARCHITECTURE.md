@@ -28,9 +28,12 @@ if external providers stall. No private payload is sent to diagnostic logging.
   dominates the APK. Runtime/native tests determine feasibility before adoption.
   `150.7871.04` Maven AAR passes emulator tests. An alternative publisher bundle failed
   native compatibility and was rejected; it is not a hidden replacement dependency.
-- **Direct-only:** no TURN/signaling server, and no default STUN traffic. Users explicitly
-  configure a STUN URL. Advertised relay candidates are rejected; this cannot prove a
-  peer's physical routing or prevent network operators/VPNs from forwarding traffic.
+- **ICE with opt-in TURN:** no signaling server or default external traffic. Users
+  explicitly configure STUN and authenticated TURN URLs. TURN credentials remain in
+  memory, never in signaling/preferences. Direct mode rejects advertised relays.
+  Relay-only mode requires allocation; TCP/TLS endpoints support restrictive client
+  networks. This user-approved change introduces relay hosting/traffic costs; see
+  `docs/TURN.md`. It does not add offline delivery or bypass all firewalls.
 - **Non-trickle signaling:** export after gathering completes, including candidates.
   Two manual payloads; failure/timeouts require a new exchange. Single-code QR is not
   assumed practical for SDP size.

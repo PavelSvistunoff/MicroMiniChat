@@ -1,4 +1,4 @@
-# MicroMiniChat Specification — 0.0.1 Preview
+# MicroMiniChat Specification — 0.0.2 Preview (development)
 
 ## Scope
 
@@ -14,7 +14,7 @@ a preview; unperformed network/security/performance checks must remain visible.
 
 ## Implemented behavior
 
-- WebRTC DTLS/SCTP, ICE, explicit STUN or host-only discovery, no TURN. Non-trickle
+- WebRTC DTLS/SCTP, ICE, explicit STUN or host-only discovery, and opt-in authenticated TURN (source update). Non-trickle
   manual offer/answer exchange with bounded versioned signaling, clipboard sensitivity
   hints, Sharesheet export/import and strict validation. No default external service.
 - Persistent ECDSA DTLS certificate identity; AES-GCM encryption at rest using a
@@ -36,7 +36,8 @@ a preview; unperformed network/security/performance checks must remain visible.
 
 No universal NAT/firewall traversal. UDP-blocked/restrictive networks may fail
 legitimately. SDP exposes addresses and traffic metadata remains visible to network
-operators; STUN operators see discovery traffic. Clipboard/sharing apps are external.
+operators; STUN operators see discovery traffic. TURN operators see routing metadata,
+not DTLS plaintext. Relay hosting is external and must be configured explicitly. Clipboard/sharing apps are external.
 Unknown-size sources are rejected; partial transfers restart from zero. Providers
 can fail/block or refuse deletion; process death may leave a partial document requiring
 manual cleanup. Persistent keys exist unwrapped in process memory while used.

@@ -141,12 +141,18 @@ public final class MainActivity extends Activity {
     private void pair() {
         if (pairing != null && pairing.isShowing()) return;
         LinearLayout form = column();
-        text(form, "Signaling reveals network addresses. Exchange it through a trusted channel. No TURN; some networks cannot connect.");
+        text(form, "Signaling reveals network addresses. Exchange it through a trusted channel. Optional TURN relays encrypted traffic through your chosen server; its operator sees addresses and traffic metadata.");
         pairStatus=text(form,session.status);
         identity=text(form,"My fingerprint:\n"+session.localFingerprint+"\nPeer fingerprint:\n"+session.remoteFingerprint);
         button(form,"Verify peer fingerprint",this::confirmVerify);
         EditText stun = input(form, "Optional stun:host:port; blank = host candidates only", 300);
         stun.setText(getPreferences(0).getString("stun", ""));
+        EditText turn = input(form, "Optional TURN URL: turns:host:5349?transport=tcp", 320);
+        EditText username = input(form, "TURN username (not saved)", 512);
+        EditText password = input(form, "TURN password (not saved)", 512);
+        username.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+        password.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        CheckBox relayOnly = new CheckBox(this); relayOnly.setText("Relay only (requires working TURN)"); form.addView(relayOnly);
         imported = input(form, "Paste offer or answer", Signal.MAX_CHARS);
         button(form, "Paste", () -> {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
@@ -158,9 +164,16 @@ public final class MainActivity extends Activity {
         });
         button(form, "Create offer", () -> {
             String endpoint = stun.getText().toString().trim(); getPreferences(0).edit().putString("stun", endpoint).apply();
-            session.offer(endpoint);
+            try { session.offer(new io.github.pavelsvistunoff.microminichat.net.IceConfig(endpoint,
+                    turn.getText().toString().trim(), username.getText().toString(), password.getText().toString(), relayOnly.isChecked())); }
+            catch (IllegalArgumentException e) { toast("Invalid ICE settings; TURN needs URL, username and password"); }
         });
-        button(form, "Apply offer / answer", () -> session.apply(imported.getText().toString(), stun.getText().toString().trim()));
+        button(form, "Apply offer / answer", () -> {
+            try { session.apply(imported.getText().toString(), new io.github.pavelsvistunoff.microminichat.net.IceConfig(
+                    stun.getText().toString().trim(), turn.getText().toString().trim(),
+                    username.getText().toString(), password.getText().toString(), relayOnly.isChecked())); }
+            catch (IllegalArgumentException e) { toast("Invalid ICE settings; TURN needs URL, username and password"); }
+        });
         exported = text(form, session.localSignal); exported.setMaxLines(5);
         button(form, "Copy local signaling", () -> copy(session.localSignal));
         button(form, "Share local signaling", () -> {
@@ -171,7 +184,7 @@ public final class MainActivity extends Activity {
         });
         ScrollView scroll = new ScrollView(this); scroll.addView(form);
         pairing = new AlertDialog.Builder(this).setTitle("Manual pairing").setView(scroll).setPositiveButton("Close", null).create();
-        pairing.setOnDismissListener(d -> { exported = null; imported = null; identity=null;pairStatus=null;pairing = null; }); pairing.show();
+        pairing.setOnDismissListener(d -> { password.setText(""); username.setText(""); exported = null; imported = null; identity=null;pairStatus=null;pairing = null; }); pairing.show();
         pairing.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     }
     private void confirmVerify() {

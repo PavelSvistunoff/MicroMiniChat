@@ -6,13 +6,17 @@
 magic `0x4d4d4301` (4 bytes), role offer=1/answer=2 (1), session UUID (16),
 SDP UTF-8 byte length (4), then SDP. Maximum text 256 KiB; SDP maximum 180 KiB.
 Reject trailing bytes, malformed UTF-8/Base64, unsupported magic/version/role,
-invalid lengths, more than 128 candidates, known relay candidates, multiple/non-data
+invalid lengths, more than 128 candidates, unknown candidate types, multiple/non-data
 media sections and missing/conflicting/non-SHA-256 DTLS fingerprints.
 
 The offerer creates a cryptographically random UUID. An answer must match a live
 pending offer and can be applied once within ten minutes. Gather all ICE candidates
 before export; gathering timeout is failure. A network change requires fresh pairing.
 SDP is sensitive because it contains addresses. QR is not implemented.
+
+The updated codec permits standard relay candidates; the session rejects them unless
+TURN was explicitly enabled before pairing. TURN credentials are never serialized.
+No envelope change is needed, but original 0.0.1 clients reject relay candidates.
 
 ## Authentication and framing
 

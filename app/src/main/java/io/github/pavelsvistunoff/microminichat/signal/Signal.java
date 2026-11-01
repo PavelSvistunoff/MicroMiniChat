@@ -44,8 +44,8 @@ public final class Signal {
             if (line.startsWith("a=candidate:")) {
                 String[] parts=line.substring("a=candidate:".length()).trim().split("\\s+");
                 if (++candidates>128 || parts.length<8 || !parts[6].equals("typ")
-                        || !(parts[7].equals("host") || parts[7].equals("srflx") || parts[7].equals("prflx")))
-                    throw new IllegalArgumentException("RELAY_OR_INVALID_CANDIDATE");
+                        || !(parts[7].equals("host") || parts[7].equals("srflx") || parts[7].equals("prflx") || parts[7].equals("relay")))
+                    throw new IllegalArgumentException("INVALID_CANDIDATE");
             }
             if (line.startsWith("a=fingerprint:")) {
                 String prefix = "a=fingerprint:sha-256 ";
@@ -58,6 +58,16 @@ public final class Signal {
         }
         if (media != 1 || fingerprint == null) throw new IllegalArgumentException("MISSING_DTLS_IDENTITY");
         return fingerprint;
+    }
+
+    public boolean hasRelayCandidates() {
+        for (String line : sdp.split("\r\n")) {
+            if (line.startsWith("a=candidate:")) {
+                String[] parts=line.substring("a=candidate:".length()).trim().split("\\s+");
+                if (parts.length>=8 && parts[7].equals("relay")) return true;
+            }
+        }
+        return false;
     }
 
     public String encode() {

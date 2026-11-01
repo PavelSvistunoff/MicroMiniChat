@@ -108,3 +108,25 @@ Final packaging excludes stale precommit VCS metadata. Every other archive entry
 including all DEX/native/resources/assets, was SHA-256 compared byte-for-byte to
 the signed APK that passed release smoke; no runtime payload changed. Final APKs
 were signature/permission/package/alignment verified again and rehashed.
+
+
+## 0.0.2-preview TURN source update (2026-11-01)
+
+The user approved optional relay support after a screenshot reported ICE failure
+between real phones on different networks. This does not establish the failure's cause.
+
+- 20 app JVM tests pass, including four TURN configuration boundary tests.
+- 18 API 35 arm64 emulator tests pass, including refusal of unconsented relay
+  signaling and relay-only failure against an unavailable synthetic loopback endpoint.
+- Six Python host contracts pass; Android debug lint and signed release/R8 build pass.
+- Five local signed version-code-2 APKs are under ignored `release/0.0.2-preview/`.
+  Existing signer, permissions, debug-fixture exclusion and 64-bit alignment checked;
+  sizes/checksums are in TURN_PREVIEW_APKS.json. DEX differs from 0.0.1 and includes
+  the new TURN UI/failure handling. Original 0.0.1 artifact checksums remain unchanged.
+- The first emulator attempt hit a previous release/debug signature conflict before
+  running tests; the disposable test installation was replaced and the rerun passed.
+
+Successful TURN allocation, TCP/TLS relay transfer, real two-network connectivity,
+server TLS/credential failure cases and installed signed-preview UI smoke remain
+untested. No relay is deployed and no TURN hostname/credentials were supplied.
+The 0.0.1 signed UI smoke above applies only to the original release.

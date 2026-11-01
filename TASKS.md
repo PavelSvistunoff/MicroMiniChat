@@ -229,3 +229,30 @@ defects, review security/complexity, update documentation and report limitations
 See [validation log](docs/VALIDATION.md), [network matrix](docs/NETWORK_TEST_MATRIX.md)
 and [measurement procedure](docs/MEASUREMENTS.md). Neither unexecuted tests nor
 planned measurements count as passing results.
+
+
+## M13 — Opt-in TURN Internet Connectivity
+
+**Status:** Host/build/lint and 18 emulator tests pass; real relay acceptance awaits deployment.
+
+**Scope:** User-approved authenticated TURN for networks where direct ICE fails.
+
+**Dependencies:** Existing ICE/DTLS/manual signaling; externally operated TURN endpoint.
+
+**Implementation tasks:** Add bounded TURN URL/credential validation; native ICE server
+configuration; UDP/TCP/TLS URL support; relay-only policy; explicit relay consent;
+in-memory credentials and masked UI; self-hosting instructions. Preserve 0.0.1 artifacts.
+
+**Acceptance criteria:** Host tests/build/lint pass; native direct regression passes;
+two phones on separate internet networks exchange verified text/files through TURN.
+The last criterion remains open until a real relay and devices are available.
+
+**Unit tests:** TURN scheme/port/transport/credential boundaries, relay-only requirements,
+relay candidate codec roundtrip and unknown-type rejection.
+
+**Integration tests:** Existing emulator native pairing/identity/message/file regression;
+real relay-only UDP/TCP/TLS, invalid credentials/certificates and network-loss tests pending.
+
+**Known limitations:** One endpoint per pairing, no automatic credential refresh or
+server provisioning, credentials re-entered after dialog dismissal; original APKs lack
+TURN support. No universal connectivity or remote internet test result is claimed.

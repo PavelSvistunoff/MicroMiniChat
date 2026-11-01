@@ -1,4 +1,4 @@
-"""Build signed 0.0.1 APKs using a local signer, without exposing passwords."""
+"""Build signed APKs for the configured app version using a local signer, without exposing passwords."""
 from pathlib import Path
 import os
 import subprocess

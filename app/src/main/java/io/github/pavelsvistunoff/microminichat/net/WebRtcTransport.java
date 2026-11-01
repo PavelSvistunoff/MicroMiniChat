@@ -70,8 +70,12 @@ public final class WebRtcTransport implements AutoCloseable {
         });
     }
 
-    public void offer(String stun) { post(() -> start(true, stun, null)); }
-    public void answer(String stun, String sdp) { post(() -> start(false, stun, sdp)); }
+    private boolean relayRequired;
+
+    public void offer(String stun) { offer(IceConfig.direct(stun)); }
+    public void offer(IceConfig ice) { post(() -> start(true, ice, null)); }
+    public void answer(String stun, String sdp) { answer(IceConfig.direct(stun), sdp); }
+    public void answer(IceConfig ice, String sdp) { post(() -> start(false, ice, sdp)); }
 
     public void acceptAnswer(String sdp) {
         post(() -> {
@@ -96,8 +100,8 @@ public final class WebRtcTransport implements AutoCloseable {
         initialized = true;
     }
 
-    private void start(boolean makeOffer, String stun, String sdp) {
-        if (started || !TransportPolicy.validStun(stun) || (!makeOffer && !TransportPolicy.validSdp(sdp))) {
+    private void start(boolean makeOffer, IceConfig ice, String sdp) {
+        if (started || ice == null || (!makeOffer && !TransportPolicy.validSdp(sdp))) {
             fail("INVALID_INPUT_OR_STATE");
             return;
         }
@@ -105,11 +109,14 @@ public final class WebRtcTransport implements AutoCloseable {
         offerer = makeOffer;
         initialize(context);
         factory = PeerConnectionFactory.builder().createPeerConnectionFactory();
-        java.util.List<PeerConnection.IceServer> servers = stun.isEmpty()
-                ? Collections.emptyList()
-                : Collections.singletonList(PeerConnection.IceServer.builder(stun).createIceServer());
+        java.util.List<PeerConnection.IceServer> servers = new java.util.ArrayList<>();
+        if (!ice.stun.isEmpty()) servers.add(PeerConnection.IceServer.builder(ice.stun).createIceServer());
+        if (ice.allowsRelay()) servers.add(PeerConnection.IceServer.builder(ice.turn)
+                .setUsername(ice.username).setPassword(ice.password).createIceServer());
         PeerConnection.RTCConfiguration config = new PeerConnection.RTCConfiguration(servers);
         config.certificate = certificate;
+        relayRequired = ice.relayOnly;
+        config.iceTransportsType = ice.relayOnly ? PeerConnection.IceTransportsType.RELAY : PeerConnection.IceTransportsType.ALL;
         config.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN;
         config.continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_ONCE;
         connection = factory.createPeerConnection(config, new PeerObserver());
@@ -158,6 +165,9 @@ public final class WebRtcTransport implements AutoCloseable {
         if (!localSet || !gatheringComplete || exported) return;
         SessionDescription sdp = connection.getLocalDescription();
         if (sdp == null || !TransportPolicy.validSdp(sdp.description)) { fail("INVALID_LOCAL_SDP"); return; }
+        if (relayRequired && !java.util.regex.Pattern.compile("(?m)^a=candidate:.* typ relay(?: |\r?$)").matcher(sdp.description).find()) {
+            fail("TURN_ALLOCATION_FAILED"); return;
+        }
         exported = true;
         if (channel == null || channel.state() != DataChannel.State.OPEN) {
             timeout(600_000, "PAIRING_TIMEOUT");

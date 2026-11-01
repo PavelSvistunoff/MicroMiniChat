@@ -34,3 +34,12 @@ ACK/reconnect, simulated default-network change, explicit stale-answer rejection
 corrupted-hash rejection pass. Production background grace is 120 seconds. The short
 test duration exercises the same policy without claiming a real battery/sleep test.
 Release two-UID smoke, if recorded, is still one emulator and uses no public STUN.
+
+
+## TURN source update
+
+After the reported real-device `FAILED_ICE_FAILED` on different networks, the user
+approved TURN. Add relay-only UDP, TCP and TLS passes on two independent networks,
+invalid/expired credentials, TLS failure and unreachable-server cases. All remain
+**untested**: no deployed TURN endpoint/credentials or attached physical phones are
+available. The screenshot records failure only; its underlying cause is not proven.

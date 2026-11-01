@@ -54,3 +54,12 @@ APK VCS metadata is disabled deliberately: artifact hashes are reviewed with the
 source commit/tag, without embedding the previous precommit SHA or creating a
 self-reference between committed metrics and the signed APK. The release tag and
 SHA256SUMS establish the published source/artifact association.
+
+
+## TURN development preview
+
+Source now uses version `0.0.2-preview` / code 2. Do not rerun the 0.0.1-only
+packager/publisher for this source: its release tag and APKs remain immutable.
+`tools/build_release.py` signs the configured version with the existing private
+signer. Local TURN preview APKs can be placed under ignored `release/0.0.2-preview/`;
+they are not a published release or evidence of successful real-internet relay tests.
