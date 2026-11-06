@@ -166,3 +166,15 @@ Documentation-only follow-up: on explicit user request, removed retired implemen
 references across all repository Markdown, including obsolete wording in the migration
 specification. Its Tor-only architecture, security gates, history preservation and
 acceptance requirements remain intact. No runtime or artifact changed.
+
+## Workspace cleanup
+
+Removed six unused/generated directory trees and eleven empty/cache directories,
+reclaiming approximately 744.8 MiB. Current ten APKs, checksums and validation reports
+remain intact; all APK hashes were checked afterward against committed evidence.
+No empty project directories remain outside protected local metadata/cache folders.
+Eight host checks and the ten-APK manifest/native/signature audit passed before
+cleanup. Runtime/source behavior is unchanged, so no Android rebuild was performed
+that would recreate these generated directories. Added Finder metadata to ignore
+rules while retaining the unrelated staged file. Signing keys, local configuration,
+required notices and historical signed release artifacts were preserved.

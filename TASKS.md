@@ -32,3 +32,7 @@ ABIs, prolonged OEM/Doze sessions and independent security/reproducible-native a
 Documentation follow-up: all repository Markdown now describes the current Tor
 architecture without retired transport/setup references. Removed superseded guides,
 consolidated validation evidence and checked relative links; runtime code unchanged.
+
+Workspace cleanup: removed empty package directories and obsolete/generated build
+trees; retained current APKs, checksums, validation reports, notices and local
+configuration. Finder metadata is ignored; existing staged user state is preserved.
