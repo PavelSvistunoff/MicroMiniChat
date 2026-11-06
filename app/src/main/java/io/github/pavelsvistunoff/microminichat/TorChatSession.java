@@ -7,6 +7,7 @@ import android.net.Network;
 import android.net.ConnectivityManager;
 import io.github.pavelsvistunoff.microminichat.files.*;
 import io.github.pavelsvistunoff.microminichat.net.*;
+import io.github.pavelsvistunoff.microminichat.lifecycle.ForegroundPolicy;
 import io.github.pavelsvistunoff.microminichat.pairing.*;
 import io.github.pavelsvistunoff.microminichat.protocol.*;
 import io.github.pavelsvistunoff.microminichat.security.*;
@@ -28,6 +29,7 @@ public final class TorChatSession {
     private final TrustStore trust;
     private final PairingCapabilities capabilities;
     private final MessageDatabase database;
+    private final ForegroundPolicy foregroundPolicy;
     private final AtomicBoolean terminated = new AtomicBoolean();
     private final AtomicInteger inputBytes = new AtomicInteger();
     private TorRuntime tor;
@@ -66,7 +68,9 @@ public final class TorChatSession {
     public volatile String draft = "", diagnostic = "";
     public volatile List<MessageDatabase.Row> history = Collections.emptyList();
     public TorChatSession(Context context) { this(context, "main"); }
-    public TorChatSession(Context context,String storage) {
+    public TorChatSession(Context context,String storage) { this(context,storage,120000); }
+    TorChatSession(Context context,String storage,long grace) {
+        foregroundPolicy = new ForegroundPolicy(grace);
         this.context = context.getApplicationContext(); this.storage = storage;
         identity = new TlsIdentity(context,"identity-"+storage); trust = new TrustStore(context,"trust-"+storage);
         capabilities = new PairingCapabilities(context,"tor-capability-"+storage);
@@ -89,7 +93,7 @@ public final class TorChatSession {
     public void watch(Runnable watcher) { this.watcher = watcher; changed(); }
     private void changed() { main.post(() -> { Runnable current = watcher; if (current != null) current.run(); }); }
     private void fail(Problem problem) { this.problem = problem; state = State.FAILED; changed(); }
-    public void start() { execute(() -> { wanted = true; startTor(); if (!localOnion.isEmpty()) dial(); }); }
+    public void start() { execute(() -> { foregroundPolicy.foreground(SystemClock.elapsedRealtime()); worker.removeCallbacks(backgroundExpiry); wanted = true; startTor(); if (!localOnion.isEmpty()) dial(); }); }
     private void startTor() throws Exception {
         if (tor != null) return;
         try { localFingerprint = identity.fingerprint(); } catch (Exception e) { fail(Problem.IDENTITY); return; }
@@ -147,20 +151,21 @@ public final class TorChatSession {
         startTor(); if (!localOnion.isEmpty()) dial();
     }); }
     private void dial() throws Exception {
-        if (!wanted || link != null || tor == null || localOnion.isEmpty()) return;
+        if (foregroundPolicy.expired(SystemClock.elapsedRealtime()) || !wanted || link != null || tor == null || localOnion.isEmpty()) return;
         if (joining == null && trust.route().isEmpty()) return;
         state = joining == null ? State.RECONNECTING : State.CONNECTING_PEER; changed();
         connector.dial(tor.socksPort(), joining == null ? trust.route() : joining.onion,
                 joining == null ? trust.trusted() : joining.fingerprint, joining);
     }
-    private final Runnable reconnect = () -> {
-        if (!wanted || link != null || terminated.get()) return;
+    private final Runnable reconnect = this::reconnectNow;
+    private void reconnectNow() {
+        if (foregroundPolicy.expired(SystemClock.elapsedRealtime()) || !wanted || link != null || terminated.get()) return;
         try { startTor(); dial(); }
         catch (Exception e) { fail(Problem.CONNECTION); scheduleReconnect(); }
     };
     private void scheduleReconnect() {
         worker.removeCallbacks(reconnect);
-        if (!wanted || link != null || terminated.get() || (joining == null && trust.route().isEmpty())) return;
+        if (foregroundPolicy.expired(SystemClock.elapsedRealtime()) || !wanted || link != null || terminated.get() || (joining == null && trust.route().isEmpty())) return;
         state = State.RECONNECTING; changed();
         worker.postDelayed(reconnect, backoff.nextDelay());
     }
@@ -313,8 +318,21 @@ public final class TorChatSession {
         if (tor != null) tor.close(); tor = null; localOnion = ""; bootstrap = 0; state = State.OFFLINE; changed();
     }
     public void disconnect() { execute(() -> { wanted = false; stopTor(); }); }
-    public void foreground() { start(); }
-    public void background() { disconnect(); }
+    private final Runnable backgroundExpiry = this::expireBackground;
+    private void expireBackground() {
+        if (!foregroundPolicy.expired(SystemClock.elapsedRealtime())) return;
+        try { stopTor(); } catch (Exception e) { fail(Problem.CONNECTION); }
+    };
+    public void foreground() { execute(() -> {
+        worker.removeCallbacks(backgroundExpiry);
+        if (foregroundPolicy.foreground(SystemClock.elapsedRealtime())) stopTor();
+        if (wanted) { startTor(); if (!localOnion.isEmpty()) dial(); }
+    }); }
+    public void background() { execute(() -> {
+        foregroundPolicy.background(SystemClock.elapsedRealtime());
+        worker.removeCallbacks(backgroundExpiry);
+        worker.postDelayed(backgroundExpiry,foregroundPolicy.grace());
+    }); }
     public void shutdown() {
         if (!terminated.compareAndSet(false,true)) return;
         worker.post(() -> { wanted = false; try { stopTor(); } catch (Exception ignored) { } if (connectivity != null) try { connectivity.unregisterNetworkCallback(networkCallback); } catch (RuntimeException ignored) { }

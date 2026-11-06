@@ -321,3 +321,15 @@ An earlier attempt timed out during initial onion connection before exercising
 reconnection. The test deadline now covers multiple bounded Tor connection attempts;
 that failed attempt is not counted as a reconnection pass. The explicit SOCKS5
 adapter avoids DNS, system proxy/authenticator behavior and direct fallback.
+
+## Tor M10 — foreground and Android lifecycle
+
+31 JVM tests, Android lint and TorLifecycleTest PASS on API 35 arm64 (combined
+build/test 44 seconds). A shortened deterministic grace verifies a brief app switch
+retains a real Tor session/draft; expiry closes networking; foreground return
+reauthenticates automatically; explicit disconnect remains stopped on return.
+Production grace remains two minutes, checked again after suspension. Network
+callbacks are unregistered on shutdown; sockets/workers/native child are closed.
+Foreground service categories/restrictions were reviewed against current Android
+Developers documentation; no indefinite background service or notification is
+claimed. See ANDROID_LIFECYCLE.md. Physical Doze/OEM/battery behavior is NOT VERIFIED.

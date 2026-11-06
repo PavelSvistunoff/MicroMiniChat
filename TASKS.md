@@ -334,6 +334,8 @@ Older milestones above describe historical WebRTC previews, not Tor acceptance.
   cancellation cleanup and independent corrupt-hash rejection.
 - Tor M09: PASS — verified automatic reconnect and offline queue draining over
   actual Tor; deterministic arbitration/backoff and strict SOCKS5 host tests pass.
-- Tor M10–M17: pending. No Tor-native messenger acceptance is claimed.
+- Tor M10: PASS — foreground grace, expiry, verified return and explicit
+  disconnect behavior through real Tor; lifecycle tests/JVM/lint pass.
+- Tor M11–M17: pending. No Tor-native messenger acceptance is claimed.
 
 See docs/TOR_BLOCKER.md for the resolved runtime issue and historical evidence. Existing historical milestones and APKs do not satisfy this migration.
