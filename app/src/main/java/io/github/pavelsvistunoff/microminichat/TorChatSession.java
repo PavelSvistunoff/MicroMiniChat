@@ -282,7 +282,7 @@ public final class TorChatSession {
     private final Runnable tick = () -> {
         if (protocol == null) return;
         try { protocol.tick(SystemClock.elapsedRealtime()); scheduleTick(); }
-        catch (Exception e) { closeLink(); fail(Problem.STORAGE); }
+        catch (Exception e) { closeLink(); fail(Problem.PROTOCOL); }
     };
     private void scheduleTick() { worker.removeCallbacks(tick); if (protocol != null && protocol.needsTick()) worker.postDelayed(tick,1000); }
     public boolean canQueue() { return !trust.trusted().isEmpty() && !trust.route().isEmpty(); }

@@ -378,3 +378,19 @@ resource cleanup precedes database operations, and stream record rate is bounded
 Archived pairing labels are localized and do not authorize new peers. Legacy trust
 with no onion route can create an invitation for explicit migration verification.
 This is a focused implementation review, not an independent native/crypto audit.
+
+## Tor M14 — adversarial automated regression
+
+The full API 35 arm64 suite ran 22 tests: 21 passed, one large-font UI test skipped
+because its emulator detector missed uppercase SDK. Corrected that detector and
+ran the five focused TLS/legacy-migration, large-font, native runtime and persistent
+onion checks: all five PASS, zero skips (24 seconds). Native child shutdown now
+exits normally (exit code 0) on both runtime and onion restart tests.
+
+19 current JVM tests and lint PASS in the full regression. Added pre-verification
+data rejection, bounded slow-reader/disconnect callbacks and HELLO timeout checks.
+Retired obsolete WebRTC-only tests after their Tor counterparts passed. A test-only
+Bouncy Castle certificate fixture preserves exact legacy wrapped identity bytes
+without depending on WebRTC. Duplicate fixture JAR metadata was resolved by excluding
+only the OSGi manifest and merging license notices. Final regression after removing
+the obsolete production dependency is recorded separately below.

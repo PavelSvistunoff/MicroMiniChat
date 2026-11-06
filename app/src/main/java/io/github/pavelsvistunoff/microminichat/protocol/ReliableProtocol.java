@@ -27,7 +27,7 @@ public final class ReliableProtocol {
     private final Consumer<Frame> files;
     private Message inFlight;
     private boolean peerHello, responded;
-    private long sentAt, lastHello;
+    private long sentAt, lastHello, negotiationStarted;
     private final long acknowledgementTimeout;
     public boolean needsTick() { return !peerHello || inFlight!=null; }
     public boolean ready() { return peerHello; }
@@ -39,7 +39,7 @@ public final class ReliableProtocol {
         this.acknowledgementTimeout = acknowledgementTimeout;
         this.session=session; this.store=store; this.link=link; this.changed=changed; this.files=files;
     }
-    public void start(long now) throws IOException { store.retry(); hello(now); }
+    public void start(long now) throws IOException { negotiationStarted=now; store.retry(); hello(now); }
     private void hello(long now) {
         lastHello=now;
         link.send(new Frame(Frame.HELLO,session,new UUID(0,0),0,ByteBuffer.allocate(4).putInt(1<<1).array()).encode(),accepted -> {});
@@ -85,6 +85,7 @@ public final class ReliableProtocol {
         });
     }
     public void tick(long now) throws IOException {
+        if (!peerHello && now-negotiationStarted>=60000) throw new IOException("NEGOTIATION_TIMEOUT");
         if (!peerHello && now-lastHello>=1000) hello(now);
         if (inFlight!=null && now-sentAt>=acknowledgementTimeout) { store.state(inFlight.id,FAILED); inFlight=null; changed.run(); }
         pump(now);

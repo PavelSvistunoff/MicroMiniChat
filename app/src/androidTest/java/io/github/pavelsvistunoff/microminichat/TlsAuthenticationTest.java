@@ -18,20 +18,25 @@ public class TlsAuthenticationTest {
             exchange(a,b,aPin,bPin,true);
             exchange(a,b,"00:".repeat(31)+"00",bPin,false);
             exchange(a,b,aPin,"00:".repeat(31)+"00",false);
+            exchange(a,b,aPin,bPin,false,"TLSv1.2");
         } finally { a.resetAfterConfirmation(); b.resetAfterConfirmation(); }
     }
     @Test public void preservesLegacyCertificateAndWrappedFile() throws Exception {
         Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();
         String name="legacy-tls-"+java.util.UUID.randomUUID();
-        IdentityStore old=new IdentityStore(context,name);
+        TlsIdentity migrated=new TlsIdentity(context,name);
+        java.io.File oldFile=new java.io.File(context.getNoBackupFilesDir(),name+".enc");
         try {
-            String pin=IdentityStore.fingerprint(old.load());
-            byte[] saved=java.nio.file.Files.readAllBytes(old.encryptedFile().toPath());
-            assertEquals(pin,new TlsIdentity(context,name).fingerprint());
-            assertArrayEquals(saved,java.nio.file.Files.readAllBytes(old.encryptedFile().toPath()));
-        } finally { old.reset(); }
+            String pin=TlsIdentity.fingerprint(LegacyIdentityFixture.create(context,name));
+            byte[] saved=java.nio.file.Files.readAllBytes(oldFile.toPath());
+            assertEquals(pin,migrated.fingerprint());
+            assertArrayEquals(saved,java.nio.file.Files.readAllBytes(oldFile.toPath()));
+        } finally { migrated.resetAfterConfirmation(); }
     }
     private void exchange(TlsIdentity a,TlsIdentity b,String serverPin,String clientPin,boolean success) throws Exception {
+        exchange(a,b,serverPin,clientPin,success,"TLSv1.3");
+    }
+    private void exchange(TlsIdentity a,TlsIdentity b,String serverPin,String clientPin,boolean success,String offered) throws Exception {
         java.util.concurrent.atomic.AtomicReference<String> diagnostic=new java.util.concurrent.atomic.AtomicReference<>("");
         ExecutorService worker=Executors.newSingleThreadExecutor();
         try(ServerSocket server=new ServerSocket(0,2,InetAddress.getByName("127.0.0.1"))) {
@@ -45,7 +50,7 @@ public class TlsAuthenticationTest {
             });
             boolean sent;
             try(SSLSocket tls=(SSLSocket)b.tls(serverPin).getSocketFactory().createSocket("127.0.0.1",server.getLocalPort())) {
-                tls.setSoTimeout(10000);TlsIdentity.configure(tls,true);
+                tls.setSoTimeout(10000);TlsIdentity.configure(tls,true);tls.setEnabledProtocols(new String[]{offered});
                 assertEquals(a.fingerprint(),TlsIdentity.authenticate(tls));
                 tls.getOutputStream().write(42);tls.getOutputStream().flush();sent=true;
             } catch(Exception e) { diagnostic.set(diagnostic.get()+" client "+e.toString()+" cause="+e.getCause()); sent=false; }

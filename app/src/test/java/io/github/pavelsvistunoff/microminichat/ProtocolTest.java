@@ -54,4 +54,15 @@ public final class ProtocolTest {
         Pair p=new Pair();p.left.send("first",0);p.left.tick(16000);p.left.send("second",16001);
         assertEquals(1,p.ab.size()); // only original first frame, never sequence 2 before 1 is acknowledged.
     }
+    @Test public void wrongAcknowledgementsNeverMarkDeliveredAndSilentNegotiationExpires() throws Exception {
+        Pair p=new Pair();p.left.send("receipt boundary",1);
+        ReliableProtocol.Message message=p.a.out.get(0);
+        p.left.receive(new Frame(Frame.ACK,p.session,UUID.randomUUID(),message.sequence,new byte[0]).encode(),2);
+        p.left.receive(new Frame(Frame.ACK,p.session,message.id,message.sequence+1,new byte[0]).encode(),2);
+        assertEquals(ReliableProtocol.SENT,p.a.out.get(0).state);
+        assertThrows(IOException.class,()->p.left.receive(new Frame(Frame.ACK,p.session,message.id,message.sequence,new byte[]{1}).encode(),2));
+        p.drain();assertEquals(ReliableProtocol.DELIVERED,p.a.out.get(0).state);
+        ReliableProtocol silent=new ReliableProtocol(UUID.randomUUID(),new Store(),(bytes,result)->result.accept(true),()->{},frame->{});
+        silent.start(0);assertThrows(IOException.class,()->silent.tick(60000));
+    }
 }

@@ -342,6 +342,8 @@ Older milestones above describe historical WebRTC previews, not Tor acceptance.
   platform per-app locales and actual Ukrainian native controls; build/lint pass.
 - Tor M13: PASS — reviewed/documented threat model and hardened cancellation,
   expiry, missing-key handling, storage failures and archived history boundaries.
-- Tor M14–M17: pending. No Tor-native messenger acceptance is claimed.
+- Tor M14: PASS — Tor-native automated suites, hostile framing/backpressure, durable
+  database failures, migration, files, lifecycle and native clean shutdown covered.
+- Tor M15–M17: pending final hardware inventory, optimization and documentation.
 
 See docs/TOR_BLOCKER.md for the resolved runtime issue and historical evidence. Existing historical milestones and APKs do not satisfy this migration.

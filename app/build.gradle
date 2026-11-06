@@ -7,7 +7,11 @@ android {
     sourceSets.main.assets.srcDir rootProject.file('third_party/webrtc')
     sourceSets.main.assets.srcDir rootProject.file('third_party/tor')
     sourceSets.main.jniLibs.srcDir layout.buildDirectory.dir('tor-native/jni')
-    packaging { jniLibs { useLegacyPackaging = true } }
+    packaging {
+        jniLibs { useLegacyPackaging = true }
+        resources.excludes += 'META-INF/versions/9/OSGI-INF/MANIFEST.MF'
+        resources.merges += ['META-INF/LICENSE.md', 'META-INF/LICENSE', 'META-INF/NOTICE.md']
+    }
     defaultConfig {
         applicationId project.hasProperty('qaPeer') ? 'io.github.pavelsvistunoff.microminichat.qapeer' : 'io.github.pavelsvistunoff.microminichat'
         minSdk 26
@@ -78,4 +82,5 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test:runner:1.6.2'
     androidTestImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'org.bouncycastle:bcpkix-jdk18on:1.86'
 }

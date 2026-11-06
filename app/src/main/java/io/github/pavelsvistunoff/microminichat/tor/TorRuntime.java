@@ -27,6 +27,7 @@ public final class TorRuntime implements AutoCloseable {
     private volatile Socket controlSocket;
     private TorControlConnection control;
     private volatile int socks;
+    private volatile boolean owned;
     private long started;
     public volatile String failureCode = "";
     private String onionAddress = "";
@@ -42,6 +43,8 @@ public final class TorRuntime implements AutoCloseable {
         onion = new OnionIdentity(this.context, storage);
         this.listener = listener;
     }
+    public int exitCodeAfterStop() { Process child=process; return child==null?Integer.MIN_VALUE:child.exitValue(); }
+    public boolean isRunning() { Process child=process; return child!=null && child.isAlive(); }
     public static boolean isNativeRunning() { return PROCESSES.stream().anyMatch(Process::isAlive); }
     public void start() {
         worker.execute(() -> {
@@ -93,7 +96,7 @@ public final class TorRuntime implements AutoCloseable {
                 byte[] cookie = new byte[32];
                 try (DataInputStream in = new DataInputStream(new FileInputStream(new File(data, "control_auth_cookie")))) { in.readFully(cookie); }
                 try { control.authenticate(cookie); } finally { Arrays.fill(cookie, (byte) 0); }
-                control.takeOwnership();
+                control.takeOwnership(); owned = true;
                 control.addRawEventListener((keyword, details) -> {
                     if (closed.get() || !"HS_DESC".equals(keyword) || onionAddress.isEmpty()) return;
                     String[] tokens = details.split(" ");
@@ -160,9 +163,12 @@ public final class TorRuntime implements AutoCloseable {
         synchronized (this) {
             Process child = process;
             if (child != null) {
-                child.destroy();
+                if (!owned) child.destroy();
                 new Thread(() -> {
-                    try { if (!child.waitFor(5, TimeUnit.SECONDS)) { child.destroyForcibly(); child.waitFor(); } }
+                    try { if (!child.waitFor(5, TimeUnit.SECONDS)) {
+                        child.destroy();
+                        if (!child.waitFor(2, TimeUnit.SECONDS)) { child.destroyForcibly(); child.waitFor(); }
+                    } }
                     catch (InterruptedException e) { Thread.currentThread().interrupt(); child.destroyForcibly(); }
                     finally { PROCESSES.remove(child); }
                 }, "tor-cleanup").start();

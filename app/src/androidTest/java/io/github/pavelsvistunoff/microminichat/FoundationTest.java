@@ -45,6 +45,7 @@ public final class FoundationTest {
             getInstrumentation().removeMonitor(monitor);
             android.app.Activity remaining = recreated != null ? recreated : activity;
             getInstrumentation().runOnMainSync(remaining::finish);
+            ((ChatApp)getInstrumentation().getTargetContext().getApplicationContext()).torSession().disconnect();
         }
     }
 }
