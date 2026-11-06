@@ -31,4 +31,22 @@ public class TorRuntimeIntegrationTest {
         assertEquals("Native Tor must exit cleanly",0,runtime.exitCodeAfterStop());
         }
     }
+    @Test public void unavailableBundledExecutableFailsClosed() throws Exception {
+        Context real=InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Context missing=new android.content.ContextWrapper(real) {
+            @Override public Context getApplicationContext() { return this; }
+            @Override public android.content.pm.ApplicationInfo getApplicationInfo() {
+                android.content.pm.ApplicationInfo info=new android.content.pm.ApplicationInfo(super.getApplicationInfo());
+                info.nativeLibraryDir=new java.io.File(getCacheDir(),"missing-runtime-"+System.nanoTime()).getAbsolutePath();
+                return info;
+            }
+        };
+        CountDownLatch failed=new CountDownLatch(1);
+        TorRuntime runtime=new TorRuntime(missing,(progress,ready,error)->{assertFalse(ready);if(error)failed.countDown();},0,"failure-"+Long.toHexString(System.nanoTime()));
+        try {
+            runtime.start();assertTrue(failed.await(15,TimeUnit.SECONDS));
+            assertEquals("TOR_EXECUTE_IOException",runtime.failureCode);
+            assertFalse(runtime.isRunning());assertThrows(java.io.IOException.class,runtime::socksPort);
+        } finally { runtime.close(); }
+    }
 }

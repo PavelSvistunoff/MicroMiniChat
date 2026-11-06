@@ -6,7 +6,7 @@ import static org.junit.Assert.*;
 public class TorLifecycleTest {
     @Test public void backgroundGraceAndExplicitDisconnectSurviveForegroundReturn() throws Exception {
         Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();String tag=Long.toHexString(System.nanoTime());
-        TorChatSession left=new TorChatSession(context,"life-a-"+tag),right=new TorChatSession(context,"life-b-"+tag,500);
+        ChatSession left=new ChatSession(context,"life-a-"+tag),right=new ChatSession(context,"life-b-"+tag,500);
         try {
             TorSessionTest.pair(left,right);String fingerprint=right.remoteFingerprint;
             right.draft="retained input";right.background();Thread.sleep(100);right.foreground();Thread.sleep(200);

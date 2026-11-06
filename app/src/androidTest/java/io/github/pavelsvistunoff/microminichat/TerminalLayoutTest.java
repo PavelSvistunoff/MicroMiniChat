@@ -35,7 +35,7 @@ public class TerminalLayoutTest {
         }finally{
             Activity remaining=activity;if(remaining!=null)instrumentation.runOnMainSync(remaining::finish);
             shell(instrumentation,previous.equals("null")?"settings delete system font_scale":"settings put system font_scale "+previous);
-            ((ChatApp)context.getApplicationContext()).torSession().disconnect();
+            ((ChatApp)context.getApplicationContext()).session().disconnect();
         }
     }
 }

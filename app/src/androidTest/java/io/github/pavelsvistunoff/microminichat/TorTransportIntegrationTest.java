@@ -17,6 +17,7 @@ public class TorTransportIntegrationTest {
         String[] addresses=new String[2];TlsIdentity[] identity=new TlsIdentity[2];UUID[] sessions=new UUID[2];
         CountDownLatch published=new CountDownLatch(2),connected=new CountDownLatch(2),ready=new CountDownLatch(2),delivered=new CountDownLatch(1);
         java.util.concurrent.atomic.AtomicBoolean failed=new java.util.concurrent.atomic.AtomicBoolean();
+        java.util.concurrent.atomic.AtomicInteger dialFailures=new java.util.concurrent.atomic.AtomicInteger();
         String tag=Long.toHexString(System.nanoTime());
         PairingCapabilities[] caps=new PairingCapabilities[2];
         try {
@@ -25,7 +26,7 @@ public class TorTransportIntegrationTest {
                 identity[side]=new TlsIdentity(context,storage);identity[side].load();
                 caps[side]=new PairingCapabilities(context,storage);
                 connector[side]=new TorConnector(identity[side],new TrustStore(context,storage),caps[side],new TorConnector.Listener(){
-                    @Override public void failed(){failed.set(true);connected.countDown();connected.countDown();}
+                    @Override public void failed(){dialFailures.incrementAndGet();}
                     @Override public void connected(javax.net.ssl.SSLSocket socket,UUID session,String pin,String onion,boolean outgoing,long epoch){
                         sessions[index]=session;
                         links[index]=new FramedLink(socket,new FramedLink.Listener(){
@@ -45,8 +46,22 @@ public class TorTransportIntegrationTest {
             }
             assertTrue("Actual onion publication",published.await(310,TimeUnit.SECONDS));assertFalse(failed.get());
             TorInvite invite=TorInvite.create(addresses[0],identity[0].fingerprint(),System.currentTimeMillis());caps[0].activate(invite);
+            int observed=0;
             connector[1].dial(tor[1].socksPort(),invite.onion,invite.fingerprint,invite);
-            assertTrue("Actual Tor/TLS connection",connected.await(180,TimeUnit.SECONDS));assertFalse(failed.get());
+            long deadline=android.os.SystemClock.elapsedRealtime()+400000;
+            while(connected.getCount()!=0 && !failed.get() && android.os.SystemClock.elapsedRealtime()<deadline) {
+                if(dialFailures.get()>observed) {
+                    observed=dialFailures.get();String code=connector[1].failureCode;
+                    assertTrue("Non-transient connection failure: "+code,
+                            code.equals("OUTGOING_SOCKS_SocketTimeoutException")||code.equals("OUTGOING_SOCKS_SOCKS_CONNECT"));
+                    assertTrue("Tor setup retry bound: "+code,observed<3);
+                    assertEquals("Partial authenticated connection must not be retried",2,connected.getCount());
+                    Thread.sleep(1000);
+                    connector[1].dial(tor[1].socksPort(),invite.onion,invite.fingerprint,invite);
+                }
+                Thread.sleep(50);
+            }
+            assertEquals("Actual Tor/TLS connection: "+connector[1].failureCode,0,connected.getCount());assertFalse(failed.get());
             assertEquals(sessions[0],sessions[1]);links[0].start();links[1].start();
             java.util.concurrent.atomic.AtomicBoolean premature=new java.util.concurrent.atomic.AtomicBoolean(true);
             Frame text=new Frame(Frame.TEXT,sessions[1],UUID.randomUUID(),1,Frame.textBytes("onion TLS test"));

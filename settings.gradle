@@ -5,4 +5,3 @@ dependencyResolutionManagement {
 }
 rootProject.name = 'MicroMiniChat'
 include ':app'
-include ':probe'

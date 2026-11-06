@@ -1,0 +1,266 @@
+{
+  "debug": [
+    {
+      "apk": "app-arm64-v8a-debug.apk",
+      "apk_bytes": 7506488,
+      "sha256": "d1345edc1133e5ebf234d4b22dddb2a3e913316dda16df4ee56795723b058c1c",
+      "native_libraries": [
+        {
+          "path": "lib/arm64-v8a/libconscrypt_jni.so",
+          "compressed_bytes": 1174214,
+          "uncompressed_bytes": 2786872
+        },
+        {
+          "path": "lib/arm64-v8a/libtor.so",
+          "compressed_bytes": 3387397,
+          "uncompressed_bytes": 7580256
+        }
+      ],
+      "manifest_and_native_inventory_verified": true,
+      "zip_alignment_verified": true
+    },
+    {
+      "apk": "app-armeabi-v7a-debug.apk",
+      "apk_bytes": 7385440,
+      "sha256": "6458c8ef392ff5b5002f3ed8ceb9d6c1c53f9689cb0d44449c453e4f996782e2",
+      "native_libraries": [
+        {
+          "path": "lib/armeabi-v7a/libconscrypt_jni.so",
+          "compressed_bytes": 988122,
+          "uncompressed_bytes": 1793124
+        },
+        {
+          "path": "lib/armeabi-v7a/libtor.so",
+          "compressed_bytes": 3452435,
+          "uncompressed_bytes": 6819684
+        }
+      ],
+      "manifest_and_native_inventory_verified": true,
+      "zip_alignment_verified": true
+    },
+    {
+      "apk": "app-x86-debug.apk",
+      "apk_bytes": 7764840,
+      "sha256": "7a88aba38e6db05f43f9b428164a7553f3edc9822b7af1aabcb8f76b1b46dfdb",
+      "native_libraries": [
+        {
+          "path": "lib/x86/libconscrypt_jni.so",
+          "compressed_bytes": 1266129,
+          "uncompressed_bytes": 2805316
+        },
+        {
+          "path": "lib/x86/libtor.so",
+          "compressed_bytes": 3553860,
+          "uncompressed_bytes": 7229832
+        }
+      ],
+      "manifest_and_native_inventory_verified": true,
+      "zip_alignment_verified": true
+    },
+    {
+      "apk": "app-x86_64-debug.apk",
+      "apk_bytes": 7928062,
+      "sha256": "a755c0ee5aa47fe0f7b5e2c01714db8d10391b83edcf79482d33453650dd70e9",
+      "native_libraries": [
+        {
+          "path": "lib/x86_64/libconscrypt_jni.so",
+          "compressed_bytes": 1289752,
+          "uncompressed_bytes": 3020816
+        },
+        {
+          "path": "lib/x86_64/libtor.so",
+          "compressed_bytes": 3693447,
+          "uncompressed_bytes": 8445824
+        }
+      ],
+      "manifest_and_native_inventory_verified": true,
+      "zip_alignment_verified": true
+    },
+    {
+      "apk": "app-universal-debug.apk",
+      "apk_bytes": 21750998,
+      "sha256": "d85709f88614cb0ebde86c31e8a796b360f035932fe69a6cf354f5b236219ab7",
+      "native_libraries": [
+        {
+          "path": "lib/arm64-v8a/libconscrypt_jni.so",
+          "compressed_bytes": 1174214,
+          "uncompressed_bytes": 2786872
+        },
+        {
+          "path": "lib/arm64-v8a/libtor.so",
+          "compressed_bytes": 3387397,
+          "uncompressed_bytes": 7580256
+        },
+        {
+          "path": "lib/armeabi-v7a/libconscrypt_jni.so",
+          "compressed_bytes": 988122,
+          "uncompressed_bytes": 1793124
+        },
+        {
+          "path": "lib/armeabi-v7a/libtor.so",
+          "compressed_bytes": 3452435,
+          "uncompressed_bytes": 6819684
+        },
+        {
+          "path": "lib/x86/libconscrypt_jni.so",
+          "compressed_bytes": 1266129,
+          "uncompressed_bytes": 2805316
+        },
+        {
+          "path": "lib/x86/libtor.so",
+          "compressed_bytes": 3553860,
+          "uncompressed_bytes": 7229832
+        },
+        {
+          "path": "lib/x86_64/libconscrypt_jni.so",
+          "compressed_bytes": 1289752,
+          "uncompressed_bytes": 3020816
+        },
+        {
+          "path": "lib/x86_64/libtor.so",
+          "compressed_bytes": 3693447,
+          "uncompressed_bytes": 8445824
+        }
+      ],
+      "manifest_and_native_inventory_verified": true,
+      "zip_alignment_verified": true
+    }
+  ],
+  "release": [
+    {
+      "apk": "app-arm64-v8a-release.apk",
+      "apk_bytes": 4533246,
+      "sha256": "40704d9f6890d5b0cd1b02884575017f353f562be2e848d696116ea164dd2dfa",
+      "native_libraries": [
+        {
+          "path": "lib/arm64-v8a/libconscrypt_jni.so",
+          "compressed_bytes": 1085568,
+          "uncompressed_bytes": 2786872
+        },
+        {
+          "path": "lib/arm64-v8a/libtor.so",
+          "compressed_bytes": 3124055,
+          "uncompressed_bytes": 7580256
+        }
+      ],
+      "signature_verified": true,
+      "signer_certificate_sha256": "2e6381e1b46492b37b3f13c8ba337fac36ae49a119cfc8f9d69a928f6168df9b",
+      "manifest_and_native_inventory_verified": true,
+      "zip_alignment_verified": true
+    },
+    {
+      "apk": "app-armeabi-v7a-release.apk",
+      "apk_bytes": 4451278,
+      "sha256": "4c4838b8c94a3d382c9b393a719cc9800a49a9f20007ad7c9fee26ba4e57aa55",
+      "native_libraries": [
+        {
+          "path": "lib/armeabi-v7a/libconscrypt_jni.so",
+          "compressed_bytes": 944973,
+          "uncompressed_bytes": 1793124
+        },
+        {
+          "path": "lib/armeabi-v7a/libtor.so",
+          "compressed_bytes": 3182675,
+          "uncompressed_bytes": 6819684
+        }
+      ],
+      "signature_verified": true,
+      "signer_certificate_sha256": "2e6381e1b46492b37b3f13c8ba337fac36ae49a119cfc8f9d69a928f6168df9b",
+      "manifest_and_native_inventory_verified": true,
+      "zip_alignment_verified": true
+    },
+    {
+      "apk": "app-x86-release.apk",
+      "apk_bytes": 4754582,
+      "sha256": "0006e2840ed457ee2fe6b1cdbda590b3cf093d7e3e3ed776f12a8706a8b171d9",
+      "native_libraries": [
+        {
+          "path": "lib/x86/libconscrypt_jni.so",
+          "compressed_bytes": 1156237,
+          "uncompressed_bytes": 2805316
+        },
+        {
+          "path": "lib/x86/libtor.so",
+          "compressed_bytes": 3274746,
+          "uncompressed_bytes": 7229832
+        }
+      ],
+      "signature_verified": true,
+      "signer_certificate_sha256": "2e6381e1b46492b37b3f13c8ba337fac36ae49a119cfc8f9d69a928f6168df9b",
+      "manifest_and_native_inventory_verified": true,
+      "zip_alignment_verified": true
+    },
+    {
+      "apk": "app-x86_64-release.apk",
+      "apk_bytes": 4886444,
+      "sha256": "6bb4dab701f28927c085af653d3714e902a503521b6b4246529eabb00edca05b",
+      "native_libraries": [
+        {
+          "path": "lib/x86_64/libconscrypt_jni.so",
+          "compressed_bytes": 1180817,
+          "uncompressed_bytes": 3020816
+        },
+        {
+          "path": "lib/x86_64/libtor.so",
+          "compressed_bytes": 3382017,
+          "uncompressed_bytes": 8445824
+        }
+      ],
+      "signature_verified": true,
+      "signer_certificate_sha256": "2e6381e1b46492b37b3f13c8ba337fac36ae49a119cfc8f9d69a928f6168df9b",
+      "manifest_and_native_inventory_verified": true,
+      "zip_alignment_verified": true
+    },
+    {
+      "apk": "app-universal-release.apk",
+      "apk_bytes": 17655476,
+      "sha256": "9be6600ac0b058defbd24e6a9bbc0f3e43fb887b3b3aaed29bd6d2eb98b97bc2",
+      "native_libraries": [
+        {
+          "path": "lib/arm64-v8a/libconscrypt_jni.so",
+          "compressed_bytes": 1085568,
+          "uncompressed_bytes": 2786872
+        },
+        {
+          "path": "lib/arm64-v8a/libtor.so",
+          "compressed_bytes": 3124055,
+          "uncompressed_bytes": 7580256
+        },
+        {
+          "path": "lib/armeabi-v7a/libconscrypt_jni.so",
+          "compressed_bytes": 944973,
+          "uncompressed_bytes": 1793124
+        },
+        {
+          "path": "lib/armeabi-v7a/libtor.so",
+          "compressed_bytes": 3182675,
+          "uncompressed_bytes": 6819684
+        },
+        {
+          "path": "lib/x86/libconscrypt_jni.so",
+          "compressed_bytes": 1156237,
+          "uncompressed_bytes": 2805316
+        },
+        {
+          "path": "lib/x86/libtor.so",
+          "compressed_bytes": 3274746,
+          "uncompressed_bytes": 7229832
+        },
+        {
+          "path": "lib/x86_64/libconscrypt_jni.so",
+          "compressed_bytes": 1180817,
+          "uncompressed_bytes": 3020816
+        },
+        {
+          "path": "lib/x86_64/libtor.so",
+          "compressed_bytes": 3382017,
+          "uncompressed_bytes": 8445824
+        }
+      ],
+      "signature_verified": true,
+      "signer_certificate_sha256": "2e6381e1b46492b37b3f13c8ba337fac36ae49a119cfc8f9d69a928f6168df9b",
+      "manifest_and_native_inventory_verified": true,
+      "zip_alignment_verified": true
+    }
+  ]
+}

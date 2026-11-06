@@ -79,7 +79,7 @@
     <string name="clipboard_label">Приватне запрошення до чату</string>
     <string name="foreground_notice">Тримайте застосунок відкритим. Фонова робота не гарантована; завершений застосунок не отримує повідомлення.</string>
     <string name="diagnostics">Діагностика з’єднання</string>
-    <string name="diagnostics_text">%1$s\nПідключення Tor: %2$d%%\n%3$s\n\nБез телеметрії та віддаленого зберігання повідомлень. Tor може бути недоступним або заблокованим. %4$s</string>
+    <string name="diagnostics_text">%1$s\nОстання діагностика з’єднання: %5$s\nПідключення Tor: %2$d%%\n%3$s\n\nБез телеметрії та віддаленого зберігання повідомлень. Tor може бути недоступним або заблокованим. %4$s</string>
     <string name="language">Мова</string>
     <string name="system_language">Мова системи</string>
     <string name="licenses">Ліцензії</string>
@@ -92,4 +92,5 @@
         <item quantity="other">%d повідомлення на цій сторінці</item>
     </plurals>
     <string name="previous_pairing">[історія] попередня перевірена пара</string>
+    <string name="no_diagnostic">Немає</string>
 </resources>

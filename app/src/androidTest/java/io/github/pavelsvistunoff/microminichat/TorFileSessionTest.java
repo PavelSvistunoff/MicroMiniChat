@@ -24,7 +24,7 @@ public class TorFileSessionTest {
         Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();String tag=Long.toHexString(System.nanoTime());
         Uri source=document("tor-source-"+tag),dest=document("tor-destination-"+tag),cancelDest=document("tor-cancel-"+tag);
         create(context,source,2*1024*1024);create(context,dest,0);create(context,cancelDest,0);
-        TorChatSession left=new TorChatSession(context,"file-a-"+tag),right=new TorChatSession(context,"file-b-"+tag);
+        ChatSession left=new ChatSession(context,"file-a-"+tag),right=new ChatSession(context,"file-b-"+tag);
         try{
             TorSessionTest.pair(left,right);left.offerFile(source);TorSessionTest.waitFor(()->right.incomingOffer!=null,30);
             right.acceptFile(right.incomingOffer.id,dest);left.sendText("text alongside Tor file");

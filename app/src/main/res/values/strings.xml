@@ -82,7 +82,7 @@
     <string name="clipboard_label">Private chat invitation</string>
     <string name="foreground_notice">Keep the app open. Background grace is best effort; a terminated app cannot receive messages.</string>
     <string name="diagnostics">Connection diagnostics</string>
-    <string name="diagnostics_text">%1$s\nTor bootstrap: %2$d%%\n%3$s\n\nNo telemetry or remote message storage. Tor can be unavailable or blocked. %4$s</string>
+    <string name="diagnostics_text">%1$s\nLast connection diagnostic: %5$s\nTor bootstrap: %2$d%%\n%3$s\n\nNo telemetry or remote message storage. Tor can be unavailable or blocked. %4$s</string>
     <string name="language">Language</string>
     <string name="system_language">System language</string>
     <string name="language_en" translatable="false">English</string>
@@ -95,4 +95,5 @@
         <item quantity="other">%d messages on this page</item>
     </plurals>
     <string name="previous_pairing">[history] earlier verified pairing</string>
+    <string name="no_diagnostic">None</string>
 </resources>

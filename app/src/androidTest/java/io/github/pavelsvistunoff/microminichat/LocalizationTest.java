@@ -31,7 +31,7 @@ public class LocalizationTest {
         }finally{
             Activity remaining=activity;if(remaining!=null)instrumentation.runOnMainSync(remaining::finish);
             instrumentation.runOnMainSync(()->manager.setApplicationLocales(previous));
-            ((ChatApp)context.getApplicationContext()).torSession().disconnect();
+            ((ChatApp)context.getApplicationContext()).session().disconnect();
         }
     }
 }

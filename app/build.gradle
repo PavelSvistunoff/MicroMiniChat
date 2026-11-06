@@ -2,9 +2,8 @@ plugins { id 'com.android.application' }
 
 android {
     namespace 'io.github.pavelsvistunoff.microminichat'
-    if (project.hasProperty('qaPeer')) layout.buildDirectory = rootProject.layout.projectDirectory.dir('build/qa-peer')
     compileSdk 35
-    sourceSets.main.assets.srcDir rootProject.file('third_party/webrtc')
+    bundle { language { enableSplit = false } }
     sourceSets.main.assets.srcDir rootProject.file('third_party/tor')
     sourceSets.main.jniLibs.srcDir layout.buildDirectory.dir('tor-native/jni')
     packaging {
@@ -13,11 +12,11 @@ android {
         resources.merges += ['META-INF/LICENSE.md', 'META-INF/LICENSE', 'META-INF/NOTICE.md']
     }
     defaultConfig {
-        applicationId project.hasProperty('qaPeer') ? 'io.github.pavelsvistunoff.microminichat.qapeer' : 'io.github.pavelsvistunoff.microminichat'
+        applicationId 'io.github.pavelsvistunoff.microminichat'
         minSdk 26
         targetSdk 35
-        versionCode 3
-        versionName '0.0.3-preview'
+        versionCode 4
+        versionName '0.1.0-tor-preview'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     signingConfigs {
@@ -78,7 +77,6 @@ dependencies {
     implementation 'info.guardianproject:jtorctl:0.4.5.7'
     implementation 'org.bouncycastle:bcprov-jdk18on:1.86'
     implementation 'org.conscrypt:conscrypt-android:2.8.0'
-    implementation 'io.github.webrtc-sdk:android:150.7871.04'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test:runner:1.6.2'
     androidTestImplementation 'junit:junit:4.13.2'

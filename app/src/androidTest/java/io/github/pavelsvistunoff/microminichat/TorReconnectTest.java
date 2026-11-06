@@ -6,7 +6,7 @@ import static org.junit.Assert.*;
 public class TorReconnectTest {
     @Test public void verifiedPeersReconnectAndDrainOfflineQueueWithoutInvitation() throws Exception {
         Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();String tag=Long.toHexString(System.nanoTime());
-        TorChatSession left=new TorChatSession(context,"retry-a-"+tag),right=new TorChatSession(context,"retry-b-"+tag);
+        ChatSession left=new ChatSession(context,"retry-a-"+tag),right=new ChatSession(context,"retry-b-"+tag);
         try {
             TorSessionTest.pair(left,right);String pin=left.remoteFingerprint;
             right.disconnect();TorSessionTest.waitFor(()->!left.ready && !right.ready,30);

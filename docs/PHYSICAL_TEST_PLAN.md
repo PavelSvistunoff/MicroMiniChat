@@ -1,7 +1,7 @@
 # Physical-device acceptance checklist
 
-Only an API 35 arm64 AOSP emulator is available to this migration run. It can run
-two independent embedded Tor clients/onion services, but does not establish any
+Two API35 arm64 AOSP emulator instances are available for software validation.
+They run independent embedded Tor clients/onion services, but do not establish any
 physical Wi-Fi/mobile/CGNAT, radio, OEM battery or multi-phone result. Physical
 acceptance was explicitly deferred. Every physical scenario below is NOT VERIFIED.
 

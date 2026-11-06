@@ -53,6 +53,7 @@ public final class TorConnector implements AutoCloseable {
     private void accept(Socket raw) {
         SSLSocket tls = null;
         long epoch = pairingEpoch;
+        String stage = "TLS";
         try {
             if (localOnion.isEmpty() || closed.get()) throw new IOException("NOT_READY");
             raw.setSoTimeout(60000);
@@ -61,6 +62,7 @@ public final class TorConnector implements AutoCloseable {
             listener.authenticating();
             TlsIdentity.configure(tls, false);
             String fingerprint = TlsIdentity.authenticate(tls);
+            stage = "GREETING";
             DataInputStream in = new DataInputStream(tls.getInputStream());
             if (in.readInt() != 0x4d544802) throw new IOException("AUTH_VERSION");
             int mode = in.readUnsignedByte();
@@ -78,7 +80,7 @@ public final class TorConnector implements AutoCloseable {
             out.writeInt(0x4d544802); out.write(localOnion.getBytes(StandardCharsets.US_ASCII)); out.flush();
             pending.remove(tls); pending.remove(raw);
             listener.connected(tls, session, fingerprint, route, false, mode == 1 ? epoch : -1); tls = null;
-        } catch (Exception e) { failureCode = "INCOMING_" + failure(e); closeSocket(tls == null ? raw : tls); }
+        } catch (Exception e) { failureCode = "INCOMING_" + stage + "_" + failure(e); closeSocket(tls == null ? raw : tls); }
         finally { pending.remove(raw); if (tls != null) pending.remove(tls); }
     }
     public void dial(int socksPort, String route, String pin, TorInvite invite) {
@@ -87,16 +89,19 @@ public final class TorConnector implements AutoCloseable {
         long epoch = pairingEpoch;
         try { workers.execute(() -> {
             Socket raw = null; SSLSocket tls = null;
+            String stage = "SOCKS";
             try {
                 if (localOnion.isEmpty() || socksPort < 1 || socksPort > 65535) throw new IOException("NOT_READY");
                 if (invite != null) TorInvite.decode(invite.encode(), System.currentTimeMillis());
                 raw = new Socket();
                 pending.add(raw);
                 OnionSocket.connect(raw, socksPort, route);
+                stage = "TLS";
                 raw.setSoTimeout(60000);
                 tls = (SSLSocket) identity.tls(pin).getSocketFactory().createSocket(raw, route, 443, true);
                 pending.add(tls); listener.authenticating(); TlsIdentity.configure(tls, true);
                 String fingerprint = TlsIdentity.authenticate(tls);
+                stage = "GREETING";
                 UUID session = UUID.randomUUID();
                 DataOutputStream out = new DataOutputStream(tls.getOutputStream());
                 out.writeInt(0x4d544802); out.writeByte(invite == null ? 2 : 1);
@@ -106,7 +111,7 @@ public final class TorConnector implements AutoCloseable {
                 if (in.readInt() != 0x4d544802 || !route.equals(readOnion(in)) || closed.get()) throw new IOException("PEER_ROUTE_BINDING");
                 pending.remove(tls); pending.remove(raw);
                 listener.connected(tls, session, fingerprint, route, true, invite == null ? -1 : epoch); tls = null; raw = null;
-            } catch (Exception e) { failureCode = "OUTGOING_" + failure(e); if (!closed.get()) listener.failed(); }
+            } catch (Exception e) { failureCode = "OUTGOING_" + stage + "_" + failure(e); if (!closed.get()) listener.failed(); }
             finally {
                 if (tls != null) { pending.remove(tls); closeSocket(tls); }
                 if (raw != null) { pending.remove(raw); closeSocket(raw); }
@@ -119,7 +124,15 @@ public final class TorConnector implements AutoCloseable {
         for (int depth = 0; cause != null && depth < 8; depth++, cause = cause.getCause()) {
             if ("PEER_IDENTITY_CHANGED".equals(cause.getMessage())) return "IDENTITY_CHANGED";
         }
-        return error.getClass().getSimpleName();
+        String code=error.getMessage();
+        if(code!=null && code.matches("SOCKS_(?:PORT|AUTH|CONNECT|REPLY)"))return code;
+        StringBuilder classes=new StringBuilder(error.getClass().getSimpleName());
+        cause=error.getCause();
+        for(int depth=0;cause!=null && depth<4;depth++,cause=cause.getCause()) {
+            String name=cause.getClass().getSimpleName();
+            if(name.matches("[A-Za-z0-9_]{1,64}"))classes.append('_').append(name);
+        }
+        return classes.toString();
     }
     private static void closeSocket(Socket socket) { if (socket != null) try { socket.close(); } catch (IOException ignored) { } }
     public void cancelPending() { for (Socket socket : pending) closeSocket(socket); }

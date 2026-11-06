@@ -21,7 +21,7 @@ import java.util.*;
 
 /** Native terminal-style messenger. Message content is always literal selectable text. */
 public final class MainActivity extends Activity {
-    private TorChatSession session;
+    private ChatSession session;
     private EditText composer;
     private TextView status, secure, notice, fileStatus;
     private Button send, attach, share, verify, accept, cancelFile;
@@ -41,7 +41,7 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle saved) {
         super.onCreate(saved);getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        session = ((ChatApp)getApplication()).torSession();
+        session = ((ChatApp)getApplication()).session();
         if (saved != null) { String id=saved.getString("saving"); if(id!=null)saving=UUID.fromString(id); pendingImport=saved.getString("import",""); }
         LinearLayout root = column();root.setBackgroundColor(color(R.color.terminal_background));
         int padding=dimension(R.dimen.terminal_padding);root.setPadding(padding,padding,padding,padding);
@@ -112,7 +112,7 @@ public final class MainActivity extends Activity {
     private String bytes(long value){return android.text.format.Formatter.formatFileSize(this,value);}
     private void render(){
         if(isFinishing()||isDestroyed())return;
-        status.setText(connectionStatus());status.setTextColor(color(session.state==TorChatSession.State.FAILED?R.color.terminal_error:R.color.terminal_secondary));
+        status.setText(connectionStatus());status.setTextColor(color(session.state==ChatSession.State.FAILED?R.color.terminal_error:R.color.terminal_secondary));
         secure.setText(session.ready?R.string.secure_verified:session.verified?R.string.secure_waiting:!session.remoteFingerprint.isEmpty()?R.string.secure_pending:R.string.secure_unpaired);
         secure.setTextColor(color(session.ready?R.color.terminal_green:R.color.terminal_amber));
         pairingActions.setVisibility(session.canQueue()?View.GONE:View.VISIBLE);share.setVisibility(session.invitation.isEmpty()?View.GONE:View.VISIBLE);verify.setVisibility(session.remoteFingerprint.isEmpty()?View.GONE:View.VISIBLE);
@@ -137,7 +137,7 @@ public final class MainActivity extends Activity {
     private void settings(){
         int[] entries={R.string.language,R.string.diagnostics,R.string.clear_history,R.string.reset_trust,R.string.reset_identity,R.string.licenses};String[] labels=new String[entries.length];for(int i=0;i<entries.length;i++)labels[i]=getString(entries[i]);
         new AlertDialog.Builder(this).setTitle(R.string.settings).setItems(labels,(dialog,index)->{
-            switch(index){case 0:language();break;case 1:new AlertDialog.Builder(this).setTitle(R.string.diagnostics).setMessage(getString(R.string.diagnostics_text,connectionStatus(),session.bootstrap,getString(session.verified?R.string.secure_verified:R.string.secure_pending),getString(R.string.foreground_notice))).setPositiveButton(R.string.close,null).show();break;
+            switch(index){case 0:language();break;case 1:new AlertDialog.Builder(this).setTitle(R.string.diagnostics).setMessage(getString(R.string.diagnostics_text,connectionStatus(),session.bootstrap,getString(session.verified?R.string.secure_verified:R.string.secure_pending),getString(R.string.foreground_notice),session.diagnostic.isEmpty()?getString(R.string.no_diagnostic):session.diagnostic)).setPositiveButton(R.string.close,null).show();break;
             case 2:confirm(R.string.clear_history,R.string.clear_history_question,session::clearHistory);break;case 3:confirm(R.string.reset_trust,R.string.reset_trust_question,session::resetTrust);break;case 4:confirm(R.string.reset_identity,R.string.reset_identity_question,session::resetIdentity);break;case 5:licenses();break;}
         }).show();
     }
@@ -146,7 +146,7 @@ public final class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle(R.string.language).setItems(labels,(dialog,index)->{if(Build.VERSION.SDK_INT>=33){getSharedPreferences("ui",0).edit().remove("language").apply();getSystemService(android.app.LocaleManager.class).setApplicationLocales(LocaleList.forLanguageTags(codes[index]));}
             else{getSharedPreferences("ui",0).edit().putString("language",codes[index]).apply();recreate();}}).show();}
     private void licenses(){new Thread(()->{
-        try{StringBuilder content=new StringBuilder();for(String file:new String[]{"LICENSE","TOR_LICENSE.txt","BOUNCY_CASTLE_LICENSE.html","CONSCRYPT_LICENSE.txt"}){
+        try{StringBuilder content=new StringBuilder();for(String file:new String[]{"LICENSE","TOR_LICENSE.txt","BOUNCY_CASTLE_LICENSE.html","CONSCRYPT_LICENSE.txt","CONSCRYPT_NOTICE.txt","CONSCRYPT_NETTY_LICENSE.txt","CONSCRYPT_HARMONY_LICENSE.txt","BORINGSSL_LICENSE.txt","JTORCTL_LICENSE.txt"}){
             try(java.io.InputStream in=getAssets().open(file);java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream()){
                 byte[] block=new byte[4096];int size;while((size=in.read(block))!=-1){if(out.size()+size>1024*1024)throw new java.io.IOException();out.write(block,0,size);}content.append(out.toString("UTF-8")).append('\n');}}
             runOnUiThread(()->{if(!isDestroyed()&&!isFinishing())new AlertDialog.Builder(this).setTitle(R.string.licenses).setMessage(content.toString()).setPositiveButton(R.string.close,null).show();});
@@ -167,11 +167,12 @@ public final class MainActivity extends Activity {
     private void joinDialog(String initial){
         if(pairing!=null)pairing.dismiss();
         LinearLayout content=column();int pad=dimension(R.dimen.terminal_padding);content.setPadding(pad,pad,pad,pad);
-        EditText input=new EditText(this);input.setId(R.id.pair_input);input.setHint(R.string.invitation_hint);input.setTypeface(Typeface.MONOSPACE);input.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE|android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(512)});input.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);input.setText(initial);content.addView(input);
+        EditText input=new EditText(this);input.setId(R.id.pair_input);input.setHint(R.string.invitation_hint);input.setTypeface(Typeface.MONOSPACE);input.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE|android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);input.setMinLines(2);input.setMaxLines(4);input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(512)});input.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);input.setText(initial);content.addView(input);
         Button paste=button(R.string.paste_invitation,()->{ClipboardManager clipboard=(ClipboardManager)getSystemService(CLIPBOARD_SERVICE);ClipData data=clipboard.getPrimaryClip();CharSequence text=data!=null&&data.getItemCount()>0?data.getItemAt(0).getText():null;if(text==null||text.length()>512){toast(R.string.invalid_invitation);return;}input.setText(text);});content.addView(paste);
-        pairing=new AlertDialog.Builder(this).setTitle(R.string.join_chat).setView(content).setNegativeButton(R.string.cancel,(d,w)->{pendingImport="";session.cancelPairing();}).setPositiveButton(R.string.connect,null).create();
+        ScrollView scroll=new ScrollView(this);scroll.addView(content);
+        pairing=new AlertDialog.Builder(this).setTitle(R.string.join_chat).setView(scroll).setNegativeButton(R.string.cancel,(d,w)->{pendingImport="";session.cancelPairing();}).setPositiveButton(R.string.connect,null).create();
         pairing.setOnCancelListener(d->{pendingImport="";session.cancelPairing();});
-        pairing.setOnShowListener(d->{pairing.getButton(AlertDialog.BUTTON_POSITIVE).setId(R.id.pair_connect);pairing.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{String value=input.getText().toString();try{TorInvite.decode(value,System.currentTimeMillis());}catch(IllegalArgumentException e){toast(R.string.invalid_invitation);return;}pendingImport="";session.joinChat(value);pairing.dismiss();});});pairing.show();
+        pairing.setOnShowListener(d->{pairing.getButton(AlertDialog.BUTTON_POSITIVE).setId(R.id.pair_connect);pairing.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{String value=input.getText().toString();try{TorInvite.decode(value,System.currentTimeMillis());}catch(IllegalArgumentException e){toast(R.string.invalid_invitation);return;}pendingImport="";session.joinChat(value);pairing.dismiss();});});pairing.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);pairing.show();
     }
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);inspectIntent(intent);}
     private void inspectIntent(Intent intent){
@@ -192,14 +193,16 @@ public final class MainActivity extends Activity {
     @Override protected void onDestroy(){session.watch(null);if(pairing!=null)pairing.dismiss();super.onDestroy();}
     private final class LogAdapter extends BaseAdapter {
         private List<MessageDatabase.Row> messages=Collections.emptyList();private List<MessageDatabase.TransferRow> files=Collections.emptyList();
-        void refresh(){if(messages!=session.history||files!=session.transferHistory){messages=session.history;files=session.transferHistory;notifyDataSetChanged();}}
-        public int getCount(){return messages.size()+files.size();}public Object getItem(int position){return position<messages.size()?messages.get(position):files.get(position-messages.size());}public long getItemId(int position){return position;}
+        private final List<Object> entries=new ArrayList<>();
+        private long created(Object entry){return entry instanceof MessageDatabase.Row?((MessageDatabase.Row)entry).created:((MessageDatabase.TransferRow)entry).created;}
+        void refresh(){if(messages!=session.history||files!=session.transferHistory){messages=session.history;files=session.transferHistory;entries.clear();entries.addAll(messages);entries.addAll(files);entries.sort(Comparator.comparingLong(this::created));notifyDataSetChanged();}}
+        public int getCount(){return entries.size();}public Object getItem(int position){return entries.get(position);}public long getItemId(int position){return position;}
         public View getView(int position,View recycled,android.view.ViewGroup parent){LinearLayout item=column();int gap=dimension(R.dimen.terminal_gap);item.setPadding(0,gap,0,gap);
             TextView body=text(0,R.dimen.terminal_message_size);body.setTextIsSelectable(true);item.addView(body);
-            if(position<messages.size()){MessageDatabase.Row row=messages.get(position);String time=android.text.format.DateFormat.getTimeFormat(MainActivity.this).format(new Date(row.created));body.setText(getString(R.string.message_line,time,getString(row.outgoing?R.string.you:R.string.peer),row.body));body.setTextColor(color(row.outgoing?R.color.terminal_green:R.color.terminal_primary));
+            if(getItem(position) instanceof MessageDatabase.Row){MessageDatabase.Row row=(MessageDatabase.Row)getItem(position);String time=android.text.format.DateFormat.getTimeFormat(MainActivity.this).format(new Date(row.created));body.setText(getString(R.string.message_line,time,getString(row.outgoing?R.string.you:R.string.peer),row.body));body.setTextColor(color(row.outgoing?R.color.terminal_green:R.color.terminal_primary));
                 if(!row.peer.equals(session.historyPeer)){TextView archive=text(R.string.previous_pairing,R.dimen.terminal_status_size);archive.setTextColor(color(R.color.terminal_secondary));item.addView(archive);}
                 if(row.outgoing){TextView delivery=text(0,R.dimen.terminal_status_size);delivery.setText(getString(R.string.status_line,getString(messageState(row.state))));delivery.setTextColor(color(row.state.equals("Failed")?R.color.terminal_error:R.color.terminal_secondary));item.addView(delivery);}
-            }else{MessageDatabase.TransferRow file=files.get(position-messages.size());body.setText(getString(R.string.file_line,file.name,bytes(file.size),getString(fileState(file.state))));body.setTextColor(color(R.color.terminal_amber));if(!file.peer.equals(session.historyPeer))item.addView(text(R.string.previous_pairing,R.dimen.terminal_status_size));}
+            }else{MessageDatabase.TransferRow file=(MessageDatabase.TransferRow)getItem(position);body.setText(getString(R.string.file_line,file.name,bytes(file.size),getString(fileState(file.state))+" · "+getString(R.string.file_progress,bytes(file.progress),bytes(file.size))));if(file.state.contains("cleanup failed"))item.addView(text(R.string.cleanup_required,R.dimen.terminal_status_size));body.setTextColor(color(R.color.terminal_amber));if(!file.peer.equals(session.historyPeer))item.addView(text(R.string.previous_pairing,R.dimen.terminal_status_size));}
             return item;
         }
     }
