@@ -219,3 +219,26 @@ See docs/TOR_RUNTIME.md for provenance/update/build strategy and limitations.
 
 TorRuntime is intentionally not yet selected by ChatSession: the following
 milestones replace onion routing, pairing, identity and transport as one product.
+
+## Tor migration — M03 blocked; M02 qualification reopened
+
+Implemented the candidate persistent no-backup onion identity, missing-key guard,
+strict v3 version/checksum address validation, loopback service mapping, and actual
+HS_DESC UPLOADED publication gate. Added JVM address-validation vectors and a real
+onion publication/restart integration test. Android's missing platform SHA3 was
+fixed using verified published bcprov-jdk18on 1.86; checksum metadata/license added.
+
+**FAIL:** OnionIntegrationTest crashes the process with a native FORTIFY destroyed
+mutex abort (SIGABRT), including tor_cond_wait in the native stack. Reproduced with
+the initial source adapter and with the preliminary native verify-config pass
+removed. The ineffective workaround was reverted. Root cause is not established.
+See TOR_BLOCKER.md. The initial M02 lifecycle smoke remains historical evidence,
+not successful qualification for persistent onion services.
+
+M04–M17 are pending. Physical-device scenarios and performance acceptance are
+NOT VERIFIED. No production Tor session, pairing, mutual TLS or terminal UI is
+claimed. Current experimental debug artifacts still select the existing session.
+
+Final blocked-candidate host recheck: debug/instrumentation builds and lint PASS;
+25 JVM tests PASS, 6 Python tests PASS. APK sizes/hashes are recorded in
+TOR_CANDIDATE_ARTIFACTS.md. The native onion test remains FAILED.

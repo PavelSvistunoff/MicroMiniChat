@@ -1,5 +1,9 @@
 # Embedded Tor integration
 
+**Qualification blocked:** actual onion-service testing reproduces a native
+mutex abort. The earlier startup-only smoke does not qualify this distribution
+for product use. See TOR_BLOCKER.md. This code is not selected by ChatSession.
+
 ## Candidate and provenance
 
 Guardian Project's published `info.guardianproject:tor-android:0.4.9.14` AAR is
@@ -54,3 +58,18 @@ Primary sources:
 - https://repo.maven.apache.org/maven2/info/guardianproject/tor-android/maven-metadata.xml
 - https://lists.torproject.org/mailman3/hyperkitty/list/tor-announce%40lists.torproject.org/latest
 - https://blog.torproject.org/sunsetting-tor-048/
+
+## Persistent service candidate
+
+Tor manages the v3 secret/public keys in the UID-private no-backup onion-v3
+folder. A committed creation marker makes a missing previously established secret
+key an error. OnionAddress checks canonical Base32, version 3 and the SHA3-256
+checksum using Bouncy Castle bcprov-jdk18on 1.86 (confirmed published coordinates;
+Android's provider lacks SHA3). The library is checksum-pinned; its license is
+bundled. No provider is globally replaced. Keys are not claimed hardware-backed.
+
+The candidate maps virtual port 443 to a supplied loopback listener. It enables
+networking after installing actual HS_DESC listeners. Only the matching UPLOADED
+event reports publication; neither hostname creation nor bootstrap alone does.
+The reset method requires callers to obtain confirmation and refuses while Tor
+is running. Product UI wiring/reset confirmation remain pending M11.

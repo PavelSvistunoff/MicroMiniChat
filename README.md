@@ -1,5 +1,13 @@
 # MicroMiniChat
 
+> **Tor migration branch — incomplete.** `TOR_MIGRATION_SPEC.md` is the approved
+> replacement architecture. M01 is complete; M02/M03 runtime qualification is
+> blocked by a reproduced native crash. M04–M17 remain pending. The application
+> still selects the historical WebRTC session; current experimental APKs are not
+> Tor-native messenger builds. See [blocker evidence](docs/TOR_BLOCKER.md).
+> Instructions below describe the historical preview and are superseded for the
+> migration target.
+
 A minimal Android messenger for exactly two people. Text and files travel over
 WebRTC DataChannels; pairing uses copy/paste or Android Sharesheet. No accounts,
 phone numbers, application backend, Firebase, analytics, push or advertising. Optional user-configured TURN relay support is in development.

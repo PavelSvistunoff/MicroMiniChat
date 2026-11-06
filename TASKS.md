@@ -318,6 +318,11 @@ The user approved TOR_MIGRATION_SPEC.md and the full terminal UI redesign.
 Older milestones above describe historical WebRTC previews, not Tor acceptance.
 
 - Tor M01: audit and concrete plan complete; see docs/TOR_MIGRATION_PLAN.md.
-- Tor M02: bundled runtime/source adapter, bootstrap polling and bounded startup;
-  build/JVM/lint and native start/stop/restart checks pass on API 35 arm64.
-- Tor M03–M17: pending implementation and validation.
+- Tor M02: runtime integration implemented; initial start/stop/restart smoke passed,
+  but qualification REOPENED after M03 exposed a reproducible native mutex abort.
+- Tor M03: persistent identity and checksum/publication gates implemented; BLOCKED
+  by native runtime crash during actual onion-service integration testing.
+- Tor M04–M17: not implemented. No Tor-native messenger acceptance is claimed.
+
+See docs/TOR_BLOCKER.md for evidence and the runtime qualification required to
+continue. Existing historical milestones and APKs do not satisfy this migration.
