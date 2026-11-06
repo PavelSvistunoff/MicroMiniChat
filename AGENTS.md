@@ -2,6 +2,15 @@
 
 ## Scope and Workflow
 
+The user explicitly approved the complete Tor migration and terminal UI redesign
+in `TOR_MIGRATION_SPEC.md`, which supersedes the older WebRTC product boundaries.
+Implement on the dedicated feature branch, commit each validated milestone, and do
+not publish APKs/create releases as part of this migration without authorization.
+Existing WebRTC code is transitional until its Tor replacement is functional; no
+new WebRTC fallback, TURN, signaling backend or manual network setup is permitted.
+Preserve local history and require explicit peer re-verification where necessary.
+
+
 The user authorized completing MicroMiniChat and committing to `main` before releasing
 `0.0.1`. Physical-device acceptance was explicitly deferred; never report unexecuted
 hardware/network checks as passing. Keep `TASKS.md` and `docs/VALIDATION.md` accurate.

@@ -7,3 +7,6 @@
 # The publisher omits this optional dynamic-classloader bridge. Our normal library
 # initialization never invokes JniZero.setJniClassLoader; do not suppress other warnings.
 -dontwarn org.jni_zero.JniZeroJni
+
+# Bundled Tor JNI resolves this exact class and its native state fields.
+-keep class org.torproject.jni.TorService { *; }

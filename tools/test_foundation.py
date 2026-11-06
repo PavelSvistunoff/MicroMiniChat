@@ -16,11 +16,14 @@ class FoundationContractTest(unittest.TestCase):
     def setUp(self):
         self.manifest = ET.parse(ROOT / 'app/src/main/AndroidManifest.xml').getroot()
 
-    def test_minimum_network_permissions_and_no_background_components(self):
+    def test_minimum_permissions_and_private_embedded_tor_service(self):
         self.assertEqual({'android.permission.INTERNET', 'android.permission.ACCESS_NETWORK_STATE'},
                          {p.get(ANDROID + 'name') for p in self.manifest.findall('uses-permission')})
         application = self.manifest.find('application')
-        self.assertEqual([], application.findall('service'))
+        services = application.findall('service')
+        self.assertEqual(1, len(services))
+        self.assertEqual('org.torproject.jni.TorService', services[0].get(ANDROID + 'name'))
+        self.assertEqual('false', services[0].get(ANDROID + 'exported'))
         self.assertEqual([], application.findall('receiver'))
         self.assertEqual([], application.findall('provider'))
 

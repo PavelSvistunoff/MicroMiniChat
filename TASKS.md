@@ -318,4 +318,6 @@ The user approved TOR_MIGRATION_SPEC.md and the full terminal UI redesign.
 Older milestones above describe historical WebRTC previews, not Tor acceptance.
 
 - Tor M01: audit and concrete plan complete; see docs/TOR_MIGRATION_PLAN.md.
-- Tor M02–M17: pending implementation and validation.
+- Tor M02: bundled runtime/source adapter, bootstrap polling and bounded startup;
+  build/JVM/lint and native start/stop/restart checks pass on API 35 arm64.
+- Tor M03–M17: pending implementation and validation.

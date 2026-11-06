@@ -195,3 +195,27 @@ root product/security/protocol documents and tooling. Created dedicated
 `python3 -m unittest discover -s tools -p 'test_*.py'`: 6 PASS.
 These are existing host contracts, not Tor runtime/network validation.
 Runtime selection remains under investigation; no Tor APK or physical result yet.
+
+## Tor migration — M02 runtime integration
+
+Candidate runtime: Guardian Project tor-android 0.4.9.14, four bundled ABIs,
+SHA-256 verified before native extraction. Recompile the published Java bridge to
+retain Java 17/SDK 35 compatibility; no runtime executable downloads. Source
+adapter suppresses exception details, uses a private control socket, keeps native
+ownership until the native run returns and shuts down control off the main thread.
+See docs/TOR_RUNTIME.md for provenance/update/build strategy and limitations.
+
+- Debug APK build: PASS.
+- App JVM suite: 24 PASS (23 existing + bootstrap parser boundary test).
+- Android lint: PASS.
+- Instrumentation APK build: PASS.
+- TorRuntimeIntegrationTest: PASS on API 35 arm64 AVD; two actual native runtime
+  starts, actual bootstrap progress events, local SOCKS availability, shutdown and
+  restart. This is not a complete bootstrap or cross-device onion test.
+- SDK/platform/build-tools/cache directories initially lacked required files;
+  restored official SDK tools (archive SHA-256 checked against Android Developers)
+  and SDK 35/build-tools/emulator image in temporary storage. No toolchain committed.
+- Physical devices/network matrix, all other ABIs and API 26: NOT VERIFIED.
+
+TorRuntime is intentionally not yet selected by ChatSession: the following
+milestones replace onion routing, pairing, identity and transport as one product.
