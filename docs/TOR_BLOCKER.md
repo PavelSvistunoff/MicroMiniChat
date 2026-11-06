@@ -1,4 +1,20 @@
-# Native Tor qualification blocker
+# Resolved runtime qualification blocker
+
+The resumed migration replaced in-process JNI invocation with the upstream
+bundled executable running as an owned child process. The Java 24 bridge is no
+longer compiled or used. Native globals are initialized once per process and each
+restart launches a new process. Cookie-authenticated loopback control, TAKEOWNERSHIP
+and OwningControllerProcess bind its lifetime to the application. Logs go to
+/dev/null. The published AAR hash/ABIs are unchanged.
+
+OnionIntegrationTest now PASSES on API 35 arm64: actual descriptor publication,
+shutdown, new child process, publication and unchanged onion identity. This removes
+the implementation blocker. The previous observations below remain historical;
+the native mutex root cause itself is not claimed fixed upstream.
+
+---
+
+# Historical native Tor qualification blocker
 
 ## Status
 

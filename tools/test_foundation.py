@@ -20,10 +20,7 @@ class FoundationContractTest(unittest.TestCase):
         self.assertEqual({'android.permission.INTERNET', 'android.permission.ACCESS_NETWORK_STATE'},
                          {p.get(ANDROID + 'name') for p in self.manifest.findall('uses-permission')})
         application = self.manifest.find('application')
-        services = application.findall('service')
-        self.assertEqual(1, len(services))
-        self.assertEqual('org.torproject.jni.TorService', services[0].get(ANDROID + 'name'))
-        self.assertEqual('false', services[0].get(ANDROID + 'exported'))
+        self.assertEqual([], application.findall('service'))
         self.assertEqual([], application.findall('receiver'))
         self.assertEqual([], application.findall('provider'))
 

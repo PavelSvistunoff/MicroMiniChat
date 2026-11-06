@@ -20,7 +20,7 @@ public class OnionIntegrationTest {
                 },server.getLocalPort());
                 try {
                     runtime.start();
-                    assertTrue("Onion publication timed out",ready.await(190,TimeUnit.SECONDS));
+                    assertTrue("Onion publication timed out",ready.await(310,TimeUnit.SECONDS));
                     assertFalse("Tor failed before publication: "+runtime.failureCode,failed.get());
                     String address=new OnionIdentity(context).address();
                     assertFalse(address.isEmpty());

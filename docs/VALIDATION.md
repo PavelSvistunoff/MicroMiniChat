@@ -242,3 +242,12 @@ claimed. Current experimental debug artifacts still select the existing session.
 Final blocked-candidate host recheck: debug/instrumentation builds and lint PASS;
 25 JVM tests PASS, 6 Python tests PASS. APK sizes/hashes are recorded in
 TOR_CANDIDATE_ARTIFACTS.md. The native onion test remains FAILED.
+
+## Resumed M02/M03 — runtime blocker resolved
+
+Run the bundled libtor.so executable in a separate owned process instead of
+in-process JNI. Use fresh process state on every restart, loopback cookie control,
+TAKEOWNERSHIP and owning PID, suppressed output, bounded asynchronous cleanup.
+Real OnionIntegrationTest PASS on API 35 arm64: descriptor publication, child
+shutdown/restart and unchanged onion identity. BUILD SUCCESSFUL in 19 seconds.
+This supersedes the blocked qualification above; physical testing remains pending.

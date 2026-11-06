@@ -1,3 +1,28 @@
+# Current runtime execution model
+
+Run the checksum-pinned AAR's executable libtor.so from Android's extracted native
+library directory using ProcessBuilder. Legacy JNI packaging ensures extraction;
+no executable is downloaded or copied into writable app data at runtime. No JNI
+bridge or Android service is used. This preserves JDK 17/SDK 35 without importing
+the AAR's Java 24 classes. Each restart creates a fresh native process.
+
+State and onion keys live under private no-backup storage. SOCKS/control bind only
+127.0.0.1; control requires the private 32-byte cookie. TAKEOWNERSHIP and owning
+controller PID terminate an orphan. Closing the runtime closes its controller,
+terminates its child and reaps it asynchronously, with a five-second forced-exit
+bound. Native output is discarded. Process exit/bootstrap/control errors fail
+closed. HS_DESC UPLOADED for this identity gates service readiness.
+
+Validated on API 35 arm64: native start/shutdown/restart and actual onion descriptor
+publication with unchanged persisted address across child restarts. Other ABIs,
+API 26, physical networks and battery remain NOT VERIFIED.
+
+The following sections retain the original dependency investigation and source
+build/update strategy; references to the Java source adapter are historical and
+superseded by the executable model above.
+
+---
+
 # Embedded Tor integration
 
 **Qualification blocked:** actual onion-service testing reproduces a native

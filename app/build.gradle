@@ -7,6 +7,7 @@ android {
     sourceSets.main.assets.srcDir rootProject.file('third_party/webrtc')
     sourceSets.main.assets.srcDir rootProject.file('third_party/tor')
     sourceSets.main.jniLibs.srcDir layout.buildDirectory.dir('tor-native/jni')
+    packaging { jniLibs { useLegacyPackaging = true } }
     defaultConfig {
         applicationId project.hasProperty('qaPeer') ? 'io.github.pavelsvistunoff.microminichat.qapeer' : 'io.github.pavelsvistunoff.microminichat'
         minSdk 26
@@ -70,7 +71,6 @@ tasks.named('preBuild').configure { dependsOn 'prepareTorNative' }
 
 dependencies {
     torDistribution('info.guardianproject:tor-android:0.4.9.14@aar') { transitive = false }
-    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
     implementation 'info.guardianproject:jtorctl:0.4.5.7'
     implementation 'org.bouncycastle:bcprov-jdk18on:1.86'
     implementation 'io.github.webrtc-sdk:android:150.7871.04'

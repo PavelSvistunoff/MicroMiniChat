@@ -1,43 +1,36 @@
 package io.github.pavelsvistunoff.microminichat.tor;
 
-import android.content.*;
-import android.os.IBinder;
-import org.torproject.jni.TorService;
+import android.content.Context;
+import android.os.SystemClock;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.net.*;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import net.freehaven.tor.control.TorControlConnection;
 
-/** App-private embedded Tor. All control operations run off the Android main thread. */
+/** Runs the bundled Tor executable in a child process, never reinitializing native globals. */
 public final class TorRuntime implements AutoCloseable {
-    public interface Listener { void state(int progress, boolean ready, boolean failed);
-        default void onionReady(String address) { } }
+    public interface Listener {
+        void state(int progress, boolean ready, boolean failed);
+        default void onionReady(String address) { }
+    }
+    private static final Set<Process> PROCESSES = ConcurrentHashMap.newKeySet();
     private final Context context;
     private final Listener listener;
     private final ScheduledExecutorService worker = Executors.newSingleThreadScheduledExecutor();
     private final AtomicBoolean closed = new AtomicBoolean();
-    private volatile TorService service;
-    private boolean bound;
-    private long started;
     private final OnionIdentity onion;
     private final int listenerPort;
-    private boolean eventsConfigured;
+    private volatile Process process;
+    private volatile Socket controlSocket;
+    private TorControlConnection control;
+    private volatile int socks;
+    private long started;
     public volatile String failureCode = "";
-    private String stage = "START";
-    private volatile String onionAddress = "";
+    private String onionAddress = "";
     private volatile boolean published;
-    private final ServiceConnection connection = new ServiceConnection() {
-        @Override public void onServiceConnected(ComponentName name, IBinder binder) {
-            service = ((TorService.LocalBinder) binder).getService();
-        }
-        @Override public void onServiceDisconnected(ComponentName name) {
-            service = null;
-            if (!closed.get()) listener.state(0, false, true);
-        }
-    };
-    public TorRuntime(Context context, Listener listener) {
-        this(context, listener, 0);
-    }
+    public TorRuntime(Context context, Listener listener) { this(context, listener, 0); }
     public TorRuntime(Context context, Listener listener, int listenerPort) {
         this.context = context.getApplicationContext();
         if (listenerPort < 0 || listenerPort > 65535) throw new IllegalArgumentException();
@@ -45,74 +38,102 @@ public final class TorRuntime implements AutoCloseable {
         onion = new OnionIdentity(this.context);
         this.listener = listener;
     }
-    public static boolean isNativeRunning() { return TorService.isNativeRunning(); }
+    public static boolean isNativeRunning() { return PROCESSES.stream().anyMatch(Process::isAlive); }
     public void start() {
         worker.execute(() -> {
-            if (closed.get() || bound) return;
+            if (closed.get() || process != null) return;
+            String stage = "PREPARE";
             try {
-                long deadline = android.os.SystemClock.elapsedRealtime() + 10000;
-                while (TorService.isNativeRunning()) {
-                    if (closed.get()) return;
-                    if (android.os.SystemClock.elapsedRealtime() >= deadline) throw new IOException("TOR_STOPPING");
-                    Thread.sleep(100);
-                }
-                File config = TorService.getTorrc(context);
-                try (FileOutputStream out = new FileOutputStream(config)) {
-                    String text = "SocksPort 127.0.0.1:auto\nHTTPTunnelPort 0\nSafeLogging 1\nLog err file /dev/null\n";
-                    text += "DisableNetwork 1\n";
-                    if (listenerPort > 0) {
-                        text += "HiddenServiceDir " + onion.prepare().getAbsolutePath() + "\n"
-                                + "HiddenServiceVersion 3\nHiddenServicePort 443 127.0.0.1:" + listenerPort + "\n";
-                    }
-                    out.write(text.getBytes(StandardCharsets.US_ASCII));
-                    out.getFD().sync();
-                }
-                started = android.os.SystemClock.elapsedRealtime();
+                File data = new File(context.getNoBackupFilesDir(), "tor-data");
+                if (!data.isDirectory() && !data.mkdir()) throw new IOException();
+                File portFile = new File(data, "control-port");
+                if (portFile.exists() && !portFile.delete()) throw new IOException();
+                List<String> args = new ArrayList<>(Arrays.asList(
+                        new File(context.getApplicationInfo().nativeLibraryDir, "libtor.so").getAbsolutePath(),
+                        "--ignore-missing-torrc", "-f", new File(data, "unused-torrc").getAbsolutePath(),
+                        "--DataDirectory", data.getAbsolutePath(), "--RunAsDaemon", "0",
+                        "--SocksPort", "127.0.0.1:auto", "--HTTPTunnelPort", "0",
+                        "--ControlPort", "127.0.0.1:auto", "--ControlPortWriteToFile", portFile.getAbsolutePath(),
+                        "--CookieAuthentication", "1", "--SafeLogging", "1", "--Log", "err file /dev/null",
+                        "--DisableNetwork", "1", "--__OwningControllerProcess", Integer.toString(android.os.Process.myPid())));
+                if (listenerPort > 0) Collections.addAll(args, "--HiddenServiceDir", onion.prepare().getAbsolutePath(),
+                        "--HiddenServiceVersion", "3", "--HiddenServicePort", "443 127.0.0.1:" + listenerPort);
                 synchronized (this) {
                     if (closed.get()) return;
-                    bound = context.bindService(new Intent(context, TorService.class), connection, Context.BIND_AUTO_CREATE);
+                    stage = "EXECUTE";
+                    process = new ProcessBuilder(args).redirectErrorStream(true)
+                            .redirectOutput(ProcessBuilder.Redirect.to(new File("/dev/null"))).start();
+                    PROCESSES.add(process);
                 }
-                if (!bound) throw new IOException("TOR_BIND_FAILED");
+                stage = "CONTROL_WAIT";
+                started = SystemClock.elapsedRealtime();
                 listener.state(0, false, false);
-                worker.scheduleWithFixedDelay(this::poll, 1, 1, TimeUnit.SECONDS);
-            } catch (Exception e) { listener.state(0, false, true); }
+                long deadline = started + 15000;
+                while (!closed.get()) {
+                    if (!process.isAlive()) throw new IOException("TOR_EXITED");
+                    if (portFile.isFile() && new File(data, "control_auth_cookie").length() == 32) break;
+                    if (SystemClock.elapsedRealtime() > deadline) throw new IOException("TOR_CONTROL_TIMEOUT");
+                    Thread.sleep(100);
+                }
+                if (closed.get()) return;
+                stage = "CONTROL_ENDPOINT";
+                String endpoint = readSmall(portFile, 128).trim();
+                if (!endpoint.matches("PORT=127\\.0\\.0\\.1:[0-9]{1,5}")) throw new IOException("TOR_CONTROL_ADDRESS");
+                stage = "CONTROL_CONNECT";
+                Socket socket = new Socket();
+                controlSocket = socket;
+                socket.connect(new InetSocketAddress("127.0.0.1", Integer.parseInt(endpoint.substring(endpoint.lastIndexOf(':') + 1))), 5000);
+                socket.setSoTimeout(10000);
+                control = new TorControlConnection(socket.getInputStream(), socket.getOutputStream());
+                control.launchThread(true);
+                byte[] cookie = new byte[32];
+                try (DataInputStream in = new DataInputStream(new FileInputStream(new File(data, "control_auth_cookie")))) { in.readFully(cookie); }
+                try { control.authenticate(cookie); } finally { Arrays.fill(cookie, (byte) 0); }
+                control.takeOwnership();
+                control.addRawEventListener((keyword, details) -> {
+                    if (closed.get() || !"HS_DESC".equals(keyword) || onionAddress.isEmpty()) return;
+                    String[] tokens = details.split(" ");
+                    if (tokens.length > 1 && tokens[0].equals("UPLOADED")
+                            && (tokens[1] + ".onion").equals(onionAddress) && !published) {
+                        published = true;
+                        listener.onionReady(onionAddress);
+                    }
+                });
+                control.setEvents(Arrays.asList("STATUS_CLIENT", "HS_DESC"));
+                if (listenerPort > 0) onionAddress = onion.address();
+                control.setConf("DisableNetwork", "0");
+                String value = control.getInfo("net/listeners/socks");
+                if (!value.matches("\"127\\.0\\.0\\.1:[0-9]{1,5}\"")) throw new IOException("TOR_SOCKS_ADDRESS");
+                socks = Integer.parseInt(value.substring(value.lastIndexOf(':') + 1, value.length() - 1));
+                worker.scheduleWithFixedDelay(this::poll, 0, 1, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                String code = e.getMessage();
+                fail(code != null && code.matches("TOR_[A-Z_]+") ? code : "TOR_" + stage + "_" + e.getClass().getSimpleName());
+            }
         });
     }
     private void poll() {
         if (closed.get()) return;
-        TorService current = service;
         try {
-            if (current != null && current.getTorControlConnection() != null) {
-                stage = "CONTROL";
-                if (!eventsConfigured) {
-                    current.getTorControlConnection().addRawEventListener((keyword, data) -> {
-                        if (closed.get() || !"HS_DESC".equals(keyword) || onionAddress.isEmpty()) return;
-                        String[] tokens = data.split(" ");
-                        if (tokens.length > 1 && tokens[0].equals("UPLOADED")
-                                && (tokens[1] + ".onion").equals(onionAddress)) {
-                            published = true;
-                            listener.onionReady(onionAddress);
-                        }
-                    });
-                    current.getTorControlConnection().setEvents(java.util.Arrays.asList("STATUS_CLIENT", "HS_DESC"));
-                    current.getTorControlConnection().setConf("DisableNetwork", "0");
-                    eventsConfigured = true;
-                }
-                stage = "ONION_IDENTITY";
-                if (listenerPort > 0 && onionAddress.isEmpty()) onionAddress = onion.address();
-                stage = "BOOTSTRAP";
-                String phase = current.getTorControlConnection().getInfo("status/bootstrap-phase");
-                int progress = bootstrapProgress(phase);
-                listener.state(progress, progress == 100, false);
-                if (progress == 100 && (listenerPort == 0 || published)) return;
-            }
-            if (android.os.SystemClock.elapsedRealtime() - started > 180000) {
-                listener.state(0, false, true);
-                close();
-            }
-        } catch (Exception e) {
-            failureCode = stage + "_" + e.getClass().getSimpleName();
-            listener.state(0, false, true); close();
+            if (!process.isAlive()) throw new IOException("TOR_EXITED");
+            if (listenerPort > 0 && onionAddress.isEmpty()) onionAddress = onion.address();
+            int progress = bootstrapProgress(control.getInfo("status/bootstrap-phase"));
+            listener.state(progress, progress == 100, false);
+            if (progress == 100 && (listenerPort == 0 || published)) return;
+            if (SystemClock.elapsedRealtime() - started > 300000) fail("TOR_BOOTSTRAP_TIMEOUT");
+        } catch (Exception e) { fail("TOR_CONTROL_" + e.getClass().getSimpleName()); }
+    }
+    private void fail(String code) {
+        if (closed.get()) return;
+        failureCode = code;
+        listener.state(0, false, true);
+        close();
+    }
+    private static String readSmall(File file, int maximum) throws IOException {
+        try (InputStream in = new FileInputStream(file); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            int next;
+            while ((next = in.read()) != -1) { if (out.size() >= maximum) throw new IOException(); out.write(next); }
+            return out.toString("US-ASCII");
         }
     }
     public static int bootstrapProgress(String phase) throws IOException {
@@ -124,16 +145,24 @@ public final class TorRuntime implements AutoCloseable {
         return value;
     }
     public int socksPort() throws IOException {
-        TorService current = service;
-        if (closed.get() || current == null || current.getSocksPort() < 1) throw new IOException("TOR_UNAVAILABLE");
-        return current.getSocksPort();
+        if (closed.get() || socks < 1) throw new IOException("TOR_UNAVAILABLE");
+        return socks;
     }
     @Override public void close() {
         if (!closed.compareAndSet(false, true)) return;
         worker.shutdownNow();
+        Socket socket = controlSocket;
+        if (socket != null) try { socket.close(); } catch (IOException ignored) { }
         synchronized (this) {
-            if (bound) { context.unbindService(connection); bound = false; }
+            Process child = process;
+            if (child != null) {
+                child.destroy();
+                new Thread(() -> {
+                    try { if (!child.waitFor(5, TimeUnit.SECONDS)) { child.destroyForcibly(); child.waitFor(); } }
+                    catch (InterruptedException e) { Thread.currentThread().interrupt(); child.destroyForcibly(); }
+                    finally { PROCESSES.remove(child); }
+                }, "tor-cleanup").start();
+            }
         }
-        service = null;
     }
 }
