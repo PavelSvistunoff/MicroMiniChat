@@ -16,6 +16,7 @@ public final class TorConnector implements AutoCloseable {
     public interface Listener {
         void connected(SSLSocket socket, UUID session, String fingerprint, String onion, boolean outgoing);
         void failed();
+        default void authenticating() { }
     }
     private final TlsIdentity identity;
     private final TrustStore trust;
@@ -55,6 +56,7 @@ public final class TorConnector implements AutoCloseable {
             raw.setSoTimeout(60000);
             tls = (SSLSocket) identity.tls(trust.trusted()).getSocketFactory().createSocket(raw, null, server.getLocalPort(), true);
             pending.add(tls);
+            listener.authenticating();
             TlsIdentity.configure(tls, false);
             String fingerprint = TlsIdentity.authenticate(tls);
             DataInputStream in = new DataInputStream(tls.getInputStream());
@@ -74,7 +76,7 @@ public final class TorConnector implements AutoCloseable {
             out.writeInt(0x4d544802); out.write(localOnion.getBytes(StandardCharsets.US_ASCII)); out.flush();
             pending.remove(tls); pending.remove(raw);
             listener.connected(tls, session, fingerprint, route, false); tls = null;
-        } catch (Exception e) { failureCode = "INCOMING_" + e.getClass().getSimpleName(); closeSocket(tls == null ? raw : tls); }
+        } catch (Exception e) { failureCode = "INCOMING_" + failure(e); closeSocket(tls == null ? raw : tls); }
         finally { pending.remove(raw); if (tls != null) pending.remove(tls); }
     }
     public void dial(int socksPort, String route, String pin, TorInvite invite) {
@@ -85,12 +87,12 @@ public final class TorConnector implements AutoCloseable {
             try {
                 if (localOnion.isEmpty() || socksPort < 1 || socksPort > 65535) throw new IOException("NOT_READY");
                 if (invite != null) TorInvite.decode(invite.encode(), System.currentTimeMillis());
-                raw = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("127.0.0.1", socksPort)));
-                pending.add(raw); raw.setSoTimeout(120000);
-                raw.connect(InetSocketAddress.createUnresolved(route, 443), 120000);
+                raw = new Socket();
+                pending.add(raw);
+                OnionSocket.connect(raw, socksPort, route);
                 raw.setSoTimeout(60000);
                 tls = (SSLSocket) identity.tls(pin).getSocketFactory().createSocket(raw, route, 443, true);
-                pending.add(tls); TlsIdentity.configure(tls, true);
+                pending.add(tls); listener.authenticating(); TlsIdentity.configure(tls, true);
                 String fingerprint = TlsIdentity.authenticate(tls);
                 UUID session = UUID.randomUUID();
                 DataOutputStream out = new DataOutputStream(tls.getOutputStream());
@@ -101,7 +103,7 @@ public final class TorConnector implements AutoCloseable {
                 if (in.readInt() != 0x4d544802 || !route.equals(readOnion(in)) || closed.get()) throw new IOException("PEER_ROUTE_BINDING");
                 pending.remove(tls); pending.remove(raw);
                 listener.connected(tls, session, fingerprint, route, true); tls = null; raw = null;
-            } catch (Exception e) { failureCode = "OUTGOING_" + e.getClass().getSimpleName(); if (!closed.get()) listener.failed(); }
+            } catch (Exception e) { failureCode = "OUTGOING_" + failure(e); if (!closed.get()) listener.failed(); }
             finally {
                 if (tls != null) { pending.remove(tls); closeSocket(tls); }
                 if (raw != null) { pending.remove(raw); closeSocket(raw); }
@@ -109,7 +111,15 @@ public final class TorConnector implements AutoCloseable {
             }
         }); } catch (RejectedExecutionException e) { dialing.set(false); listener.failed(); }
     }
+    private static String failure(Exception error) {
+        Throwable cause = error;
+        for (int depth = 0; cause != null && depth < 8; depth++, cause = cause.getCause()) {
+            if ("PEER_IDENTITY_CHANGED".equals(cause.getMessage())) return "IDENTITY_CHANGED";
+        }
+        return error.getClass().getSimpleName();
+    }
     private static void closeSocket(Socket socket) { if (socket != null) try { socket.close(); } catch (IOException ignored) { } }
+    public void cancelPending() { for (Socket socket : pending) closeSocket(socket); }
     @Override public void close() {
         if (!closed.compareAndSet(false, true)) return;
         try { server.close(); } catch (IOException ignored) { }

@@ -304,3 +304,20 @@ protocol corruption test independently alters the final hash, rejects completion
 and deletes the partial destination. It is a protocol fault-injection test, not a
 second real-network result. Transfer workers/input queues and stop-and-wait chunk
 ACKs remain bounded; provider-blocked I/O and cleanup refusal remain explicit limits.
+
+## Tor M09 — automatic reconnection
+
+31 JVM tests PASS, including deterministic connection arbitration, jitter/backoff
+cap/reset and strict SOCKS5 canonical-domain routing with denied-proxy rejection.
+TorReconnectTest PASS on API 35 arm64: verified pairing, peer/Tor shutdown, local
+queueing while offline, peer restart, automatic mutual authentication without a
+new invitation, and exactly one remotely stored/delivered queued message. Combined
+build/test run 34 seconds. Network callbacks and a single exponentially backed-off
+retry timer are generation-fenced; retries cap at five minutes. Identity pin
+replacement stays blocked. Two simultaneous attempts choose the same lower-route
+initiated stream; pending IDs/receipts survive replacement.
+
+An earlier attempt timed out during initial onion connection before exercising
+reconnection. The test deadline now covers multiple bounded Tor connection attempts;
+that failed attempt is not counted as a reconnection pass. The explicit SOCKS5
+adapter avoids DNS, system proxy/authenticator behavior and direct fallback.

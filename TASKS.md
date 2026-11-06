@@ -332,6 +332,8 @@ Older milestones above describe historical WebRTC previews, not Tor acceptance.
   and database/history reopen through real Tor-native sessions.
 - Tor M08: PASS — real Tor 2 MiB SAF transfer plus text, completion ACK/hash,
   cancellation cleanup and independent corrupt-hash rejection.
-- Tor M09–M17: pending. No Tor-native messenger acceptance is claimed.
+- Tor M09: PASS — verified automatic reconnect and offline queue draining over
+  actual Tor; deterministic arbitration/backoff and strict SOCKS5 host tests pass.
+- Tor M10–M17: pending. No Tor-native messenger acceptance is claimed.
 
 See docs/TOR_BLOCKER.md for the resolved runtime issue and historical evidence. Existing historical milestones and APKs do not satisfy this migration.

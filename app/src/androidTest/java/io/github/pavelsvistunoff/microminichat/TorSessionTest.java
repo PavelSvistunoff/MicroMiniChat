@@ -16,7 +16,7 @@ public class TorSessionTest {
         waitFor(()->(!left.invitation.isEmpty() && !right.localOnion.isEmpty()) || left.state==TorChatSession.State.FAILED || right.state==TorChatSession.State.FAILED,310);
         assertFalse("left "+left.problem,left.state==TorChatSession.State.FAILED);assertFalse("right "+right.problem,right.state==TorChatSession.State.FAILED);
         right.joinChat(left.invitation);
-        try { waitFor(()->(!left.remoteFingerprint.isEmpty() && !right.remoteFingerprint.isEmpty()) || left.state==TorChatSession.State.FAILED || right.state==TorChatSession.State.FAILED,180); }
+        try { waitFor(()->(!left.remoteFingerprint.isEmpty() && !right.remoteFingerprint.isEmpty()) || left.state==TorChatSession.State.FAILED || right.state==TorChatSession.State.FAILED,360); }
         catch(AssertionError e) { throw new AssertionError("Connection states "+left.state+"/"+right.state+" diagnostics "+left.diagnostic+"/"+right.diagnostic,e); }
         assertFalse("left connection "+left.problem+" "+left.diagnostic,left.state==TorChatSession.State.FAILED);assertFalse("right connection "+right.problem+" "+right.diagnostic,right.state==TorChatSession.State.FAILED);
         assertEquals(left.localFingerprint,right.remoteFingerprint);assertEquals(right.localFingerprint,left.remoteFingerprint);
