@@ -186,3 +186,12 @@ a fresh listener starts after restart. PHONE_PAIRING_SMOKE.json records the resu
 Cached-app freezing was temporarily disabled solely to model two foreground phones and
 restored afterward. This remains one emulator with two signed app UIDs, not two internet
 networks. The separate QA package was removed and the main package stopped afterward.
+
+## Tor migration — M01
+
+Read TOR_MIGRATION_SPEC.md and AGENTS.md completely, inspected app/probe source,
+root product/security/protocol documents and tooling. Created dedicated
+`feature/tor-migration` branch (checkout initially on main).
+`python3 -m unittest discover -s tools -p 'test_*.py'`: 6 PASS.
+These are existing host contracts, not Tor runtime/network validation.
+Runtime selection remains under investigation; no Tor APK or physical result yet.

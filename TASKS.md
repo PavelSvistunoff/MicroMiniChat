@@ -311,3 +311,11 @@ and durable text ACK, deep-link review without automatic connection; existing re
 **Known limitations:** No automatic port forwarding, public-IP discovery service, public
 signaling backend or CGNAT bypass. TURN does not expose the pairing listener. Both apps
 must remain open; custom links may need copy/paste. Internet hardware testing is pending.
+
+## Tor migration (authoritative replacement roadmap)
+
+The user approved TOR_MIGRATION_SPEC.md and the full terminal UI redesign.
+Older milestones above describe historical WebRTC previews, not Tor acceptance.
+
+- Tor M01: audit and concrete plan complete; see docs/TOR_MIGRATION_PLAN.md.
+- Tor M02–M17: pending implementation and validation.
