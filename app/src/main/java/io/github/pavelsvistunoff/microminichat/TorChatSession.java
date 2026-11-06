@@ -2,6 +2,8 @@ package io.github.pavelsvistunoff.microminichat;
 
 import android.content.Context;
 import android.os.*;
+import android.net.Uri;
+import io.github.pavelsvistunoff.microminichat.files.*;
 import io.github.pavelsvistunoff.microminichat.net.*;
 import io.github.pavelsvistunoff.microminichat.pairing.*;
 import io.github.pavelsvistunoff.microminichat.protocol.*;
@@ -30,6 +32,13 @@ public final class TorChatSession {
     private TorConnector connector;
     private FramedLink link;
     private ReliableProtocol protocol;
+    private FileTransfers transfers;
+    private long historyGeneration;
+    public volatile FileOffer incomingOffer;
+    public volatile boolean filesEnabled, cleanupRequired;
+    public volatile String fileName = "", fileState = "";
+    public volatile long fileSize, fileProgress;
+    public volatile List<MessageDatabase.TransferRow> transferHistory = Collections.emptyList();
     private UUID session;
     private boolean canonical, pairing, createRequested;
     private TorInvite joining;
@@ -142,7 +151,11 @@ public final class TorChatSession {
                     try {
                         if (link != bound[0]) return;
                         if (protocol == null && verified) initializeProtocol();
-                        if (file || protocol == null || !verified) throw new java.io.IOException("UNVERIFIED_DATA");
+                        if (protocol == null || !verified) throw new java.io.IOException("UNVERIFIED_DATA");
+                        if (file) {
+                            if (!ready || transfers == null) throw new java.io.IOException("UNEXPECTED_FILE");
+                            transfers.receive(true, Frame.decode(bytes)); return;
+                        }
                         protocol.receive(bytes,SystemClock.elapsedRealtime()); scheduleTick();
                     } catch (Exception e) { closeLink(); fail(Problem.PROTOCOL); }
                     finally { inputBytes.addAndGet(-bytes.length); }
@@ -166,9 +179,57 @@ public final class TorChatSession {
                     ready = protocol != null && protocol.ready() && verified;
                     if (ready) { state = State.CONNECTED; pairing = false; }
                     refreshHistory(); changed();
-                }, frame -> { throw new IllegalArgumentException("UNEXPECTED_FILE_FRAME"); },60000);
+                }, frame -> {
+                    if (transfers == null) throw new IllegalArgumentException("UNEXPECTED_FILE_FRAME");
+                    transfers.receive(false, frame);
+                },60000);
+        initializeFiles(bound);
         protocol.start(SystemClock.elapsedRealtime()); scheduleTick();
     }
+    private void initializeFiles(FramedLink bound) {
+        String peer = remoteFingerprint;
+        long snapshot = historyGeneration;
+        FileTransfers[] instance = new FileTransfers[1];
+        try {
+            instance[0] = new FileTransfers(context, session, (file,frame,result) -> {
+                if (terminated.get()) { result.accept(false); return; }
+                worker.post(() -> {
+                    if (link != bound || !ready || !verified) { result.accept(false); return; }
+                    bound.send(file,frame.encode(),result);
+                });
+            }, new FileTransfers.Listener() {
+                @Override public void onOffer(FileOffer offer) { execute(() -> {
+                    if (transfers == instance[0]) { incomingOffer = offer; changed(); }
+                }); }
+                @Override public void onUpdate(FileOffer offer,boolean outgoing,long progress,String state,String uri,String hash) { execute(() -> {
+                    if (snapshot != historyGeneration) return;
+                    database.transfer(offer.id,peer,offer.name,outgoing,offer.size,progress,state,uri,hash);
+                    if (transfers == instance[0]) {
+                        fileName = offer.name; fileSize = offer.size; fileProgress = progress; fileState = state;
+                        cleanupRequired = state.contains("cleanup failed"); refreshHistory();
+                    }
+                }); }
+                @Override public void onError(String ignored) { execute(() -> {
+                    if (transfers == instance[0]) { fileState = "Failed"; changed(); }
+                }); }
+            });
+            transfers = instance[0]; filesEnabled = true;
+        } catch (IllegalStateException e) { filesEnabled = false; fileState = "Provider busy"; }
+    }
+    public void offerFile(Uri uri) { execute(() -> {
+        if (ready && transfers != null) transfers.offer(uri);
+        else fail(Problem.CONNECTION);
+    }); }
+    public void acceptFile(UUID id,Uri uri) { execute(() -> {
+        if (ready && transfers != null) transfers.accept(id,uri);
+        else {
+            boolean deleted = false;
+            try { if (uri != null && "content".equals(uri.getScheme())) deleted = android.provider.DocumentsContract.deleteDocument(context.getContentResolver(),uri); }
+            catch (Exception ignored) { }
+            fileState = "Failed"; cleanupRequired = !deleted; changed();
+        }
+    }); }
+    public void cancelTransfers() { execute(() -> { if (transfers != null) transfers.cancel(); }); }
     private final Runnable tick = () -> {
         if (protocol == null) return;
         try { protocol.tick(SystemClock.elapsedRealtime()); scheduleTick(); }
@@ -186,11 +247,11 @@ public final class TorChatSession {
     private void refreshHistory() {
         String peer = remoteFingerprint.isEmpty() ? trust.trusted() : remoteFingerprint;
         MessageDatabase.Page page = database.page(peer,before); hasOlder = page.more;
-        history = database.rows(peer,before); changed();
+        history = database.rows(peer,before); transferHistory = database.transferRows(peer); changed();
     }
     public void loadOlder() { execute(() -> { if (hasOlder && !history.isEmpty()) { before = history.get(0).rowId; refreshHistory(); } }); }
     public void latestHistory() { execute(() -> { before = Long.MAX_VALUE; refreshHistory(); }); }
-    public void clearHistory() { execute(() -> { database.clearHistory(trust.trusted()); refreshHistory(); }); }
+    public void clearHistory() { execute(() -> { historyGeneration++; if (transfers != null) transfers.cancel(); database.clearHistory(trust.trusted()); refreshHistory(); }); }
     public void resetTrust() { execute(() -> { stopTor(); trust.clear(); refreshHistory(); }); }
     public void resetIdentity() { execute(() -> {
         stopTor();
@@ -205,6 +266,8 @@ public final class TorChatSession {
     private void closeLink() {
         FramedLink old = link; link = null; worker.removeCallbacks(tick); protocol = null; ready = false; verified = false;
         if (old != null) { old.close(); database.interrupt(remoteFingerprint); }
+        if (transfers != null) { transfers.close(); transfers = null; }
+        incomingOffer = null; filesEnabled = false;
         remoteFingerprint = ""; remoteOnion = ""; session = null; refreshHistory();
     }
     private void stopTor() throws Exception {

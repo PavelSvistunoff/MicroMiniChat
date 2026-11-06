@@ -128,6 +128,21 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         }
         Collections.reverse(result);return Collections.unmodifiableList(result);
     }
+    public static final class TransferRow {
+        public final String name,state;
+        public final boolean outgoing;
+        public final long size,progress;
+        TransferRow(String name,String state,boolean outgoing,long size,long progress) {
+            this.name=name;this.state=state;this.outgoing=outgoing;this.size=size;this.progress=progress;
+        }
+    }
+    public List<TransferRow> transferRows(String peer) {
+        List<TransferRow> result=new ArrayList<>();
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT name,state,direction,size,progress FROM transfers WHERE peer=? ORDER BY rowid DESC LIMIT 50",new String[]{peer})) {
+            while(c.moveToNext())result.add(new TransferRow(c.getString(0),c.getString(1),c.getInt(2)==0,c.getLong(3),c.getLong(4)));
+        }
+        Collections.reverse(result);return Collections.unmodifiableList(result);
+    }
     public void clearHistory(String peer) { getWritableDatabase().delete("messages","peer=?",new String[]{peer});getWritableDatabase().delete("transfers","peer=?",new String[]{peer}); }
     public void clearAll() { SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{for(String table:new String[]{"messages","receipts","meta","transfers"})db.delete(table,null,null);db.setTransactionSuccessful();}finally{db.endTransaction();} }
     public void transfer(UUID id,String peer,String name,boolean outgoing,long size,long progress,String state,String uri,String hash) {

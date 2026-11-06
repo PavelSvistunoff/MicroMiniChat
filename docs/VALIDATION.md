@@ -293,3 +293,14 @@ Schema v1/history filenames and fingerprint partitions are unchanged.
 An initial real-network session attempt hit its connection deadline; the rerun
 passed in a 21-second combined build/test run. This is not universal connectivity
 or a bootstrap benchmark. Automatic backoff/recovery follows M09.
+
+## Tor M08 — streamed files
+
+Two API 35 arm64 tests PASS (combined build/test 1m10s). Real Tor sessions stream
+2 MiB through SAF with explicit acceptance and verified completion ACK; concurrent
+text is durably delivered; source/destination SHA-256 match. A second transfer is
+cancelled and its destination becomes inaccessible after cleanup. The retained
+protocol corruption test independently alters the final hash, rejects completion
+and deletes the partial destination. It is a protocol fault-injection test, not a
+second real-network result. Transfer workers/input queues and stop-and-wait chunk
+ACKs remain bounded; provider-blocked I/O and cleanup refusal remain explicit limits.
