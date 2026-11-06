@@ -1,6 +1,6 @@
 # Tor implementation plan and outcome
 
-Authoritative requirements: [TOR_MIGRATION_SPEC.md](../TOR_MIGRATION_SPEC.md).
+Product requirements: [SPEC.md](../SPEC.md).
 Work branch: feature/tor-migration. Publication and user identity/data deletion
 are outside this authorization.
 

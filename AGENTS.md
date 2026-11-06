@@ -2,8 +2,8 @@
 
 ## Scope and Workflow
 
-The user explicitly approved the complete Tor migration and terminal UI redesign
-in `TOR_MIGRATION_SPEC.md`, which defines the approved product architecture.
+The user explicitly approved the complete Tor migration and terminal UI redesign.
+The product requirements and architecture are documented in SPEC.md and ARCHITECTURE.md.
 Implement on the dedicated feature branch, commit each validated milestone, and do
 not publish APKs/create releases as part of this migration without authorization.
 Tor is the only product runtime. No alternate Internet transport, application

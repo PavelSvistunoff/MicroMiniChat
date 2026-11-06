@@ -1,6 +1,6 @@
 # Tor migration milestones
 
-TOR_MIGRATION_SPEC.md defines the approved Tor product requirements. Work is on
+SPEC.md defines the approved Tor product requirements. Work is on
 feature/tor-migration. Software milestones are implemented, reviewed, validated and
 committed. Physical acceptance is explicitly deferred and never inferred from emulators.
 

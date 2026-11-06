@@ -1,7 +1,7 @@
 # MicroMiniChat product specification
 
-TOR_MIGRATION_SPEC.md is the authoritative approved full specification. This document
-summarizes the implemented Tor product.
+This document defines the approved Tor-native product requirements.
+Implementation details are documented in ARCHITECTURE.md, PROTOCOL.md and SECURITY.md.
 
 One verified two-person conversation, no accounts/contact lists/groups/server storage.
 Embedded Tor client plus persistent v3 onion service on each installation; mutual
