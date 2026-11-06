@@ -36,3 +36,8 @@ consolidated validation evidence and checked relative links; runtime code unchan
 Workspace cleanup: removed empty package directories and obsolete/generated build
 trees; retained current APKs, checksums, validation reports, notices and local
 configuration. Finder metadata is ignored; existing staged user state is preserved.
+
+Release follow-up: 0.1.0-tor-preview publication is explicitly user-authorized.
+Fresh signed build, host checks, artifact/signature audits and two-emulator native
+UI gate PASS; draft/download verification precedes prerelease publication. Physical
+acceptance remains deferred. Source and artifact association travels with the release.

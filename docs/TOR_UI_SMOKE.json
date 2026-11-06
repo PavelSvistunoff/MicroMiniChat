@@ -2,6 +2,20 @@
   "version": "0.1.0-tor-preview",
   "build_variant": "release",
   "environment": "Two foreground Android emulators, separate installations, real Tor",
+  "devices": [
+    {
+      "api": 35,
+      "abi": "arm64-v8a",
+      "model": "Android SDK built for arm64",
+      "apk_sha256": "2a4086e9a2bb2fbd1fad1db2a840652d897cb7db496bee977fff430ba80525b5"
+    },
+    {
+      "api": 35,
+      "abi": "arm64-v8a",
+      "model": "Android SDK built for arm64",
+      "apk_sha256": "2a4086e9a2bb2fbd1fad1db2a840652d897cb7db496bee977fff430ba80525b5"
+    }
+  ],
   "physical_hardware": false,
   "both_apps_foreground": true,
   "background_policy_modified": false,
@@ -12,19 +26,5 @@
   "durable_text_ack": true,
   "history_survives_force_stop": true,
   "verified_automatic_reconnect": true,
-  "bundled_license_screen_opens": true,
-  "devices": [
-    {
-      "api": 35,
-      "abi": "arm64-v8a",
-      "model": "Android SDK built for arm64",
-      "apk_sha256": "40704d9f6890d5b0cd1b02884575017f353f562be2e848d696116ea164dd2dfa"
-    },
-    {
-      "api": 35,
-      "abi": "arm64-v8a",
-      "model": "Android SDK built for arm64",
-      "apk_sha256": "40704d9f6890d5b0cd1b02884575017f353f562be2e848d696116ea164dd2dfa"
-    }
-  ]
+  "bundled_license_screen_opens": true
 }

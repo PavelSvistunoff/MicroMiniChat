@@ -178,3 +178,21 @@ cleanup. Runtime/source behavior is unchanged, so no Android rebuild was perform
 that would recreate these generated directories. Added Finder metadata to ignore
 rules while retaining the unrelated staged file. Signing keys, local configuration,
 required notices and historical signed release artifacts were preserved.
+
+## 0.1.0-tor-preview release gate — 2026-11-06
+
+The user explicitly authorized a release after merging the software migration and
+documentation cleanup. Fresh signed/debug builds, 19 JVM tests, eight host checks
+and lint PASS (zero errors, three reviewed warnings). All ten current APKs pass
+artifact audits; five release signatures match the established certificate.
+New signing hashes were recorded and the newly signed arm64 APK was exercised on
+two foreground API35 emulators: exact private Sharesheet/import, bilateral identity
+verification, real keyboard Connect/Send, durable text ACK, force-stop history,
+authenticated reconnect and license UI all PASS. TOR_UI_SMOKE.json records those
+exact APK hashes. Earlier full/focused Android counts above are not new executions.
+
+Publication is prepared as a prerelease with five APKs, checksums and source/signer
+metadata. Draft asset downloads must match local qualified bytes before publication.
+No new physical-phone/network/battery or other ABI/API runtime result is claimed.
+Current Tor update applicability review is in TOR_RUNTIME.md. New generated APKs
+remain ignored; historical signed artifacts and unrelated staged metadata stay intact.

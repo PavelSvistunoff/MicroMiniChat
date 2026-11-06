@@ -57,6 +57,24 @@ emulators still do not establish physical Wi-Fi/mobile/CGNAT/OEM battery accepta
 Use the ordinary app package on both emulators. Only the current build/audit
 commands above are supported.
 
-This migration authorizes local builds/commits, not publication, release creation,
-new infrastructure or uploads. APKs remain ignored build outputs. Future publication
-requires explicit authorization and a reviewed source/artifact association.
+## Publication
+
+Publication requires explicit user authorization. The user authorized preparing
+and publishing 0.1.0-tor-preview on 2026-11-06. Future releases require their own
+authorization. Keep new generated APKs in ignored release/build output; only the
+historical tracked artifact directory has a generated-file exception.
+
+1. Build/check using the commands above; verify the established signer and record
+   exact hashes. Re-run signed UI qualification if the APK bytes have changed.
+2. Commit release notes and evidence without keys, generated APKs or unrelated
+   staged workspace changes. Create an annotated version tag at that exact commit.
+3. Stage the five ABI/universal APKs with versioned names, SOURCE.json (commit,
+   certificate fingerprint and APK hashes) and SHA256SUMS in an ignored directory.
+4. Push the reviewed source commit and tag without force. Create a draft GitHub
+   prerelease using the explicit tag and notes file; do not overwrite existing tags
+   or published assets. Upload all seven files.
+5. Download the draft assets and verify each byte count/hash plus all checksums
+   against local qualified files. Only then publish with prerelease status retained.
+
+The resulting release is a preview with the physical checklist still unverified.
+GitHub release notes and attached SOURCE.json identify the published source/assets.

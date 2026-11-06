@@ -71,3 +71,20 @@ https://repo.maven.apache.org/maven2/info/guardianproject/tor-android/maven-meta
 https://lists.torproject.org/mailman3/hyperkitty/list/tor-announce%40lists.torproject.org/latest ;
 https://blog.torproject.org/sunsetting-tor-048/ .
 Licenses/provenance are retained in third_party/tor.
+
+## Pre-publication update review — 2026-11-06
+
+Maven Central metadata still lists Android 0.4.9.14; no newer Android AAR was
+substituted without qualification. The official 0.4.9.15 source changelog primarily
+covers relay/directory denial-of-service defenses, with additional performance and
+control-command fixes. This app is a client/onion service, not a relay/directory
+authority, and does not issue HSPOST or ATTACHSTREAM. Core 0.4.9.16's announcement
+identifies directory-authority fixes and says non-authority upgrades are not urgent.
+This review is not a general vulnerability-clearance or reproducible-build claim.
+New Android runtime releases still require the update procedure above.
+
+Sources reviewed:
+- https://repo.maven.apache.org/maven2/info/guardianproject/tor-android/maven-metadata.xml
+- https://archive.torproject.org/tor-package-archive/tor-0.4.9.15.tar.gz (ChangeLog)
+- https://forum.torproject.org/t/security-release-0-4-9-15/22332
+- https://forum.torproject.org/t/security-release-0-4-9-16/22372

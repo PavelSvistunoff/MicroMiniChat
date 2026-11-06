@@ -130,7 +130,7 @@
     {
       "apk": "app-arm64-v8a-release.apk",
       "apk_bytes": 4533246,
-      "sha256": "40704d9f6890d5b0cd1b02884575017f353f562be2e848d696116ea164dd2dfa",
+      "sha256": "2a4086e9a2bb2fbd1fad1db2a840652d897cb7db496bee977fff430ba80525b5",
       "native_libraries": [
         {
           "path": "lib/arm64-v8a/libconscrypt_jni.so",
@@ -151,7 +151,7 @@
     {
       "apk": "app-armeabi-v7a-release.apk",
       "apk_bytes": 4451278,
-      "sha256": "4c4838b8c94a3d382c9b393a719cc9800a49a9f20007ad7c9fee26ba4e57aa55",
+      "sha256": "aa313abdf1f28857b815143682679720ec0a32e467a12b59425c8b6afd25b2a7",
       "native_libraries": [
         {
           "path": "lib/armeabi-v7a/libconscrypt_jni.so",
@@ -172,7 +172,7 @@
     {
       "apk": "app-x86-release.apk",
       "apk_bytes": 4754582,
-      "sha256": "0006e2840ed457ee2fe6b1cdbda590b3cf093d7e3e3ed776f12a8706a8b171d9",
+      "sha256": "5a60e15f3dc736301241687ee92e41faef3d9b7de456d7093b316bb3d5db0d02",
       "native_libraries": [
         {
           "path": "lib/x86/libconscrypt_jni.so",
@@ -193,7 +193,7 @@
     {
       "apk": "app-x86_64-release.apk",
       "apk_bytes": 4886444,
-      "sha256": "6bb4dab701f28927c085af653d3714e902a503521b6b4246529eabb00edca05b",
+      "sha256": "91cddfe9ddf53d4579b81a8304dc82d514e22f99344ec2afc98c748e755c709a",
       "native_libraries": [
         {
           "path": "lib/x86_64/libconscrypt_jni.so",
@@ -214,7 +214,7 @@
     {
       "apk": "app-universal-release.apk",
       "apk_bytes": 17655476,
-      "sha256": "9be6600ac0b058defbd24e6a9bbc0f3e43fb887b3b3aaed29bd6d2eb98b97bc2",
+      "sha256": "1b5a2b3e5257311b096573fc3104abf8fc1e84cb272991f95af35235f25db912",
       "native_libraries": [
         {
           "path": "lib/arm64-v8a/libconscrypt_jni.so",
