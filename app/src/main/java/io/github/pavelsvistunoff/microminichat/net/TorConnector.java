@@ -27,6 +27,7 @@ public final class TorConnector implements AutoCloseable {
     private final Set<Socket> pending = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean closed = new AtomicBoolean(), dialing = new AtomicBoolean();
     public volatile String localOnion = "";
+    public volatile String failureCode = "";
     public TorConnector(TlsIdentity identity, TrustStore trust, PairingCapabilities capabilities, Listener listener) throws IOException {
         this.identity = identity; this.trust = trust; this.capabilities = capabilities; this.listener = listener;
         server = new ServerSocket(0, 4, InetAddress.getByName("127.0.0.1"));
@@ -73,7 +74,7 @@ public final class TorConnector implements AutoCloseable {
             out.writeInt(0x4d544802); out.write(localOnion.getBytes(StandardCharsets.US_ASCII)); out.flush();
             pending.remove(tls); pending.remove(raw);
             listener.connected(tls, session, fingerprint, route, false); tls = null;
-        } catch (Exception e) { closeSocket(tls == null ? raw : tls); }
+        } catch (Exception e) { failureCode = "INCOMING_" + e.getClass().getSimpleName(); closeSocket(tls == null ? raw : tls); }
         finally { pending.remove(raw); if (tls != null) pending.remove(tls); }
     }
     public void dial(int socksPort, String route, String pin, TorInvite invite) {
@@ -100,7 +101,7 @@ public final class TorConnector implements AutoCloseable {
                 if (in.readInt() != 0x4d544802 || !route.equals(readOnion(in)) || closed.get()) throw new IOException("PEER_ROUTE_BINDING");
                 pending.remove(tls); pending.remove(raw);
                 listener.connected(tls, session, fingerprint, route, true); tls = null; raw = null;
-            } catch (Exception e) { if (!closed.get()) listener.failed(); }
+            } catch (Exception e) { failureCode = "OUTGOING_" + e.getClass().getSimpleName(); if (!closed.get()) listener.failed(); }
             finally {
                 if (tls != null) { pending.remove(tls); closeSocket(tls); }
                 if (raw != null) { pending.remove(raw); closeSocket(raw); }

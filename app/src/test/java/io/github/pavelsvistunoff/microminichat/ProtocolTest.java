@@ -29,7 +29,7 @@ public final class ProtocolTest {
     }
     @Test public void acknowledgementRequiresCommitAndRetryKeepsId() throws Exception {
         Pair p=new Pair();p.left.send("hello",2);byte[] original=p.ab.peek();
-        assertEquals(ReliableProtocol.SENDING,p.a.out.get(0).state);
+        assertEquals(ReliableProtocol.SENT,p.a.out.get(0).state);
         p.right.receive(p.ab.remove(),3);p.ba.clear(); // Lost ACK, committed remotely.
         p.left.tick(16000);assertEquals(ReliableProtocol.FAILED,p.a.out.get(0).state);
         p.left.retry(16001);assertArrayEquals(original,p.ab.peek());p.drain();
@@ -38,7 +38,7 @@ public final class ProtocolTest {
     @Test public void failedCommitProducesNoAcknowledgement() throws Exception {
         Pair p=new Pair();p.b.failCommit=true;p.left.send("hello",2);
         assertThrows(IOException.class,()->p.right.receive(p.ab.remove(),3));assertTrue(p.ba.isEmpty());
-        assertEquals(ReliableProtocol.SENDING,p.a.out.get(0).state);
+        assertEquals(ReliableProtocol.SENT,p.a.out.get(0).state);
     }
     @Test public void malformedFramesAndCrossSessionReplayReject() throws Exception {
         Pair p=new Pair();byte[] other=new Frame(Frame.TEXT,UUID.randomUUID(),UUID.randomUUID(),1,new byte[]{65}).encode();

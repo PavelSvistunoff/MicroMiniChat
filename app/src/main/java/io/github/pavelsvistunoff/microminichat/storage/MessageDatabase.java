@@ -21,7 +21,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
     @Override public void onUpgrade(SQLiteDatabase db,int old,int next) { throw new IllegalStateException("UNSUPPORTED_SCHEMA"); }
     public void recover() {
-        getWritableDatabase().execSQL("UPDATE messages SET state='Failed' WHERE state='Sending'");
+        getWritableDatabase().execSQL("UPDATE messages SET state='Failed' WHERE state IN ('Sending','Sent')");
         getWritableDatabase().execSQL("UPDATE transfers SET state='Interrupted — select and restart' WHERE state NOT LIKE 'Complete%' AND state NOT LIKE 'Cancelled%' AND state NOT LIKE 'Failed%'");
     }
     private long counter(SQLiteDatabase db,String key) {
@@ -51,7 +51,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             } catch(RuntimeException e) { throw new IOException("MESSAGE_READ_FAILED"); }
         }
         @Override public void state(UUID id,String state) throws IOException {
-            if(!Arrays.asList(ReliableProtocol.PENDING,ReliableProtocol.SENDING,ReliableProtocol.DELIVERED,ReliableProtocol.FAILED).contains(state))throw new IOException("INVALID_STATE");
+            if(!Arrays.asList(ReliableProtocol.PENDING,ReliableProtocol.SENDING,ReliableProtocol.SENT,ReliableProtocol.DELIVERED,ReliableProtocol.FAILED).contains(state))throw new IOException("INVALID_STATE");
             try {
                 ContentValues values=new ContentValues();values.put("state",state);
                 getWritableDatabase().update("messages",values,"peer=? AND id=? AND direction=0 AND state!='Delivered'",new String[]{peer,id.toString()});
@@ -96,7 +96,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         Collections.reverse(rows);return Collections.unmodifiableList(rows);
     }
     public void interrupt(String peer) {
-        getWritableDatabase().execSQL("UPDATE messages SET state='Failed' WHERE peer=? AND state='Sending'",new Object[]{peer});
+        getWritableDatabase().execSQL("UPDATE messages SET state='Failed' WHERE peer=? AND state IN ('Sending','Sent')",new Object[]{peer});
         getWritableDatabase().execSQL("UPDATE transfers SET state='Interrupted — restart required' WHERE peer=? AND state NOT LIKE 'Complete%' AND state NOT LIKE 'Cancelled%' AND state NOT LIKE 'Failed%'",new Object[]{peer});
     }
     public static final class Page {
@@ -112,6 +112,21 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             }
         }
         Collections.reverse(rows);return new Page(Collections.unmodifiableList(rows),oldest,more);
+    }
+    public static final class Row {
+        public final long rowId, created;
+        public final boolean outgoing;
+        public final String body, state;
+        Row(long rowId,long created,boolean outgoing,String body,String state) {
+            this.rowId=rowId;this.created=created;this.outgoing=outgoing;this.body=body;this.state=state;
+        }
+    }
+    public List<Row> rows(String peer,long before) {
+        List<Row> result=new ArrayList<>();
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT rowid,created,direction,body,state FROM messages WHERE peer=? AND rowid<? ORDER BY rowid DESC LIMIT 200",new String[]{peer,Long.toString(before)})) {
+            while(c.moveToNext())result.add(new Row(c.getLong(0),c.getLong(1),c.getInt(2)==0,c.getString(3),c.getString(4)));
+        }
+        Collections.reverse(result);return Collections.unmodifiableList(result);
     }
     public void clearHistory(String peer) { getWritableDatabase().delete("messages","peer=?",new String[]{peer});getWritableDatabase().delete("transfers","peer=?",new String[]{peer}); }
     public void clearAll() { SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{for(String table:new String[]{"messages","receipts","meta","transfers"})db.delete(table,null,null);db.setTransactionSuccessful();}finally{db.endTransaction();} }

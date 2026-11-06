@@ -18,10 +18,23 @@ public final class FramedLink implements AutoCloseable {
     private static final ScheduledExecutorService TIMER = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread thread = new Thread(r, "stream-deadlines"); thread.setDaemon(true); return thread;
     });
+    public volatile String failureCode = "";
     private final Socket socket;
     private final Listener listener;
     private final AtomicBoolean closed = new AtomicBoolean(), announced = new AtomicBoolean();
-    private final ArrayDeque<byte[]> controls = new ArrayDeque<>(), files = new ArrayDeque<>();
+    private static final class Record {
+        final byte[] bytes;
+        final Consumer<Boolean> result;
+        final AtomicBoolean completed = new AtomicBoolean();
+        Record(byte[] bytes, Consumer<Boolean> result) { this.bytes = bytes; this.result = result; }
+        void finish(boolean written) {
+            if (result != null && completed.compareAndSet(false, true)) {
+                try { result.accept(written); } catch (RuntimeException ignored) { }
+            }
+        }
+    }
+    private final ArrayDeque<Record> controls = new ArrayDeque<>(), files = new ArrayDeque<>();
+    private volatile Record current;
     private int controlBytes, fileBytes;
     private volatile boolean localVerified, remoteVerified;
     private volatile long writing, lastSent = System.nanoTime(), created = System.nanoTime();
@@ -49,34 +62,37 @@ public final class FramedLink implements AutoCloseable {
         if (!announced.get() || bytes == null || bytes.length > Frame.MAX_FRAME || bytes.length < Frame.HEADER) {
             accepted.accept(false); return;
         }
-        accepted.accept(enqueue(file ? 1 : 0, bytes));
+        if (!enqueue(file ? 1 : 0, bytes, accepted)) accepted.accept(false);
     }
-    private synchronized boolean enqueue(int channel, byte[] payload) {
+    private boolean enqueue(int channel, byte[] payload) { return enqueue(channel, payload, null); }
+    private synchronized boolean enqueue(int channel, byte[] payload, Consumer<Boolean> result) {
         int size = payload.length + 1;
         if (closed.get() || size > Frame.MAX_FRAME + 1) return false;
         if (channel == 1 ? fileBytes + size > 128 * 1024 : controlBytes + size > 64 * 1024) return false;
         byte[] record = new byte[size]; record[0] = (byte) channel;
         System.arraycopy(payload, 0, record, 1, payload.length);
-        if (channel == 1) { files.add(record); fileBytes += size; }
-        else { controls.add(record); controlBytes += size; }
+        if (channel == 1) { files.add(new Record(record, result)); fileBytes += size; }
+        else { controls.add(new Record(record, result)); controlBytes += size; }
         notifyAll(); return true;
     }
     private void writeLoop() {
         try {
             DataOutputStream out = new DataOutputStream(socket.getOutputStream()); out.writeInt(0x4d544302); out.flush();
             while (!closed.get()) {
-                byte[] record;
+                Record record;
                 synchronized (this) {
                     while (!closed.get() && controls.isEmpty() && files.isEmpty()) wait();
                     if (closed.get()) break;
-                    if (!controls.isEmpty()) { record = controls.remove(); controlBytes -= record.length; }
-                    else { record = files.remove(); fileBytes -= record.length; }
+                    if (!controls.isEmpty()) { record = controls.remove(); controlBytes -= record.bytes.length; }
+                    else { record = files.remove(); fileBytes -= record.bytes.length; }
+                    current = record;
                 }
                 writing = System.nanoTime();
-                out.writeInt(record.length); out.write(record); out.flush();
+                out.writeInt(record.bytes.length); out.write(record.bytes); out.flush();
+                record.finish(true); current = null;
                 lastSent = System.nanoTime(); writing = 0;
             }
-        } catch (Exception e) { close(); }
+        } catch (Exception e) { failureCode = e.getMessage() != null && e.getMessage().matches("[A-Z_]+") ? e.getMessage() : e.getClass().getSimpleName(); close(); }
     }
     public static byte[] readRecord(DataInputStream in) throws IOException {
         int size = in.readInt();
@@ -99,13 +115,18 @@ public final class FramedLink implements AutoCloseable {
                     listener.onFrame(record[0] == 1, Arrays.copyOfRange(record, 1, record.length));
                 }
             }
-        } catch (Exception e) { close(); }
+        } catch (Exception e) { failureCode = e.getMessage() != null && e.getMessage().matches("[A-Z_]+") ? e.getMessage() : e.getClass().getSimpleName(); close(); }
     }
     @Override public void close() {
         if (!closed.compareAndSet(false, true)) return;
         if (deadline != null) deadline.cancel(false);
         try { socket.close(); } catch (IOException ignored) { }
-        synchronized (this) { controls.clear(); files.clear(); controlBytes = fileBytes = 0; notifyAll(); }
+        synchronized (this) {
+            if (current != null) current.finish(false);
+            for (Record record : controls) record.finish(false);
+            for (Record record : files) record.finish(false);
+            controls.clear(); files.clear(); controlBytes = fileBytes = 0; notifyAll();
+        }
         listener.onClosed();
     }
 }

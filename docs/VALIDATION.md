@@ -278,3 +278,18 @@ refused before verification; one-sided verification stays unready; two-sided
 verification permits the frame. This is an emulator/one-host Tor-network test,
 not a physical cross-network result. JVM suite (28 tests) and Android lint PASS.
 Total combined build/test execution: 1m16s, not a bootstrap-only measurement.
+
+## Tor M07 — durable session messaging
+
+PASS: 28 JVM tests and TorSessionTest on API 35 arm64. The new coordinator pairs
+through two real Tor clients, requires bilateral verification, sends text, observes
+a durable remote ACK with one display row, and reopens the same database/history.
+The stream now calls write completion only after flushing a TLS record: Sent is
+separate from Sending; Delivered still requires the receiver's durable receipt.
+Recovery treats interrupted Sending/Sent rows as Failed; retry retains IDs/sequences.
+Tor ACK deadline is 60 seconds; the existing default protocol tests retain 15 seconds.
+Schema v1/history filenames and fingerprint partitions are unchanged.
+
+An initial real-network session attempt hit its connection deadline; the rerun
+passed in a 21-second combined build/test run. This is not universal connectivity
+or a bootstrap benchmark. Automatic backoff/recovery follows M09.

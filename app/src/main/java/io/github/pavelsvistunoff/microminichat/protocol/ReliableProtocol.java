@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 
 /** Single-threaded coordinator; the repository must commit receipt before returning. */
 public final class ReliableProtocol {
-    public static final String PENDING="Pending", SENDING="Sending", DELIVERED="Delivered", FAILED="Failed";
+    public static final String PENDING="Pending", SENDING="Sending", SENT="Sent", DELIVERED="Delivered", FAILED="Failed";
     public static final class Message {
         public final UUID id; public final long sequence; public final String text, state;
         public Message(UUID id,long sequence,String text,String state) { this.id=id; this.sequence=sequence; this.text=text; this.state=state; }
@@ -28,9 +28,15 @@ public final class ReliableProtocol {
     private Message inFlight;
     private boolean peerHello, responded;
     private long sentAt, lastHello;
+    private final long acknowledgementTimeout;
     public boolean needsTick() { return !peerHello || inFlight!=null; }
     public boolean ready() { return peerHello; }
     public ReliableProtocol(UUID session,Store store,Link link,Runnable changed,Consumer<Frame> files) {
+        this(session, store, link, changed, files, 15000);
+    }
+    public ReliableProtocol(UUID session,Store store,Link link,Runnable changed,Consumer<Frame> files,long acknowledgementTimeout) {
+        if (acknowledgementTimeout < 15000 || acknowledgementTimeout > 120000) throw new IllegalArgumentException();
+        this.acknowledgementTimeout = acknowledgementTimeout;
         this.session=session; this.store=store; this.link=link; this.changed=changed; this.files=files;
     }
     public void start(long now) throws IOException { store.retry(); hello(now); }
@@ -72,15 +78,15 @@ public final class ReliableProtocol {
         if (message==null || FAILED.equals(message.state)) return;
         inFlight=message; sentAt=now; store.state(message.id,SENDING); changed.run();
         link.send(new Frame(Frame.TEXT,session,message.id,message.sequence,Frame.textBytes(message.text)).encode(),accepted -> {
-            if (!accepted && inFlight!=null && inFlight.id.equals(message.id)) {
-                try { store.state(message.id,FAILED); inFlight=null; changed.run(); }
+            if (inFlight!=null && inFlight.id.equals(message.id)) {
+                try { store.state(message.id,accepted ? SENT : FAILED); if (!accepted) inFlight=null; changed.run(); }
                 catch (IOException e) { throw new IllegalStateException("STATE_PERSISTENCE_FAILED"); }
             }
         });
     }
     public void tick(long now) throws IOException {
         if (!peerHello && now-lastHello>=1000) hello(now);
-        if (inFlight!=null && now-sentAt>=15000) { store.state(inFlight.id,FAILED); inFlight=null; changed.run(); }
+        if (inFlight!=null && now-sentAt>=acknowledgementTimeout) { store.state(inFlight.id,FAILED); inFlight=null; changed.run(); }
         pump(now);
     }
     public void retry(long now) throws IOException { if(inFlight==null) { store.retry(); pump(now); } }
