@@ -1,3 +1,5 @@
+> HISTORICAL WEBRTC PREVIEW EVIDENCE. Unsupported by the Tor product. See README.md and docs/VALIDATION.md for current behavior.
+
 # WebRTC Dependency Feasibility Record
 
 ## Selection and provenance

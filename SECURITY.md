@@ -58,8 +58,9 @@ At most two unauthenticated workers, no waiting worker queue, backlog four,
 validated before allocation (65,536-byte body maximum), channel/version/session
 checks are strict, queues are capped at 64 KiB control/128 KiB file plus one frame,
 and coordinator/file input queues at 256 KiB. More than 512 records/second closes
-the stream. Heartbeats/read/write/unverified deadlines close stalled peers. No
-remote data or cryptographic operations run on the Android main thread.
+the stream. Heartbeats/read/write/unverified deadlines close stalled peers.
+Network I/O, TLS/Keystore operations and file/database processing run off the main
+thread. UI invitation review uses only the fixed-size bounded parser/checksum.
 
 ## Storage, files and runtime control
 
@@ -94,7 +95,10 @@ only and protected by MANAGE_DOCUMENTS; release packaging must exclude it.
 Runtime coordinates/hashes are pinned and notices retained. Tor Android .14 is the
 published artifact inspected; newer Tor core .15/.16 announcements and upstream
 native crash reports require ongoing applicability review. Hash pinning is not a
-proof of binary provenance/reproducible builds. See TOR_RUNTIME.md for secure
+proof of binary provenance/reproducible builds. The pinned Conscrypt AAR records
+BoringSSL revision 427ec40cc8edc545253289232e885708c409e5ea; its exact upstream
+license and the Conscrypt/Netty/Harmony/jtorctl notices are bundled.
+See docs/TOR_RUNTIME.md for secure
 updates/source-build qualification. Conscrypt/Bouncy Castle are maintained standard
 implementations; no new crypto primitives or authentication handshake were invented.
 

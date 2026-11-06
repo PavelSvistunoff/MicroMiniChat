@@ -1,8 +1,8 @@
 # Tor migration milestones
 
 TOR_MIGRATION_SPEC.md supersedes historical WebRTC product requirements. Work is on
-feature/tor-migration. Each milestone is implemented, reviewed, validated and committed;
-physical acceptance is explicitly deferred and never inferred from emulator results.
+feature/tor-migration. Software milestones are implemented, reviewed, validated and
+committed. Physical acceptance is explicitly deferred and never inferred from emulators.
 
 | Milestone | Implementation and evidence |
 | --- | --- |
@@ -20,9 +20,9 @@ physical acceptance is explicitly deferred and never inferred from emulator resu
 | M12 Localization | Complete English/Ukrainian resources, plurals/format contracts, locale timestamps and platform per-app language. Host and actual Ukrainian/large-font tests PASS. |
 | M13 Security | Reviewed pins/keys/capabilities/control/bypass/queues/exports/logs/backup/storage, cancellation epochs and retained archived history. Threat model in SECURITY.md; adversarial storage tests PASS. |
 | M14 Automation | Tor-native JVM, host and Android suites replace obsolete tests; mismatch/replay/expiry/framing/disconnect/backpressure/ACK/database/file/lifecycle/migration coverage. See exact runs in VALIDATION.md. |
-| M15 Physical | All available hardware inventoried: only API35 arm64 emulator. Fourteen-scenario checklist prepared in docs/PHYSICAL_TEST_PLAN.md. All physical results NOT VERIFIED; acceptance deferred. |
+| M15 Physical | All available hardware inventoried: API35 arm64 emulators; no physical phones. Fourteen-scenario checklist prepared in docs/PHYSICAL_TEST_PLAN.md. All physical results NOT VERIFIED; acceptance deferred. |
 | M16 Optimize | Removed WebRTC runtime/source/probe and old shrinker rules; signed four-ABI/universal builds, additive transfer timestamps, bounded merged log, measured performance, real IME/touch fix and two-foreground-emulator signed UI acceptance PASS. See final evidence. |
-| M17 Documentation | Tor-only README/spec/architecture/protocol/security/build/pairing/lifecycle/update guidance and retired historical instructions; final evidence consolidated; documentation review/commit follows M16. |
+| M17 Documentation | Tor-only README/spec/architecture/protocol/security/build/pairing/lifecycle/update guidance and retired historical instructions; final evidence consolidated and documentation reviewed; software migration complete, physical acceptance deferred. |
 
 No backend deployed, APK published, release created or existing user data reset.
 Historical GPL/third-party notices and immutable release/0.0.1 APKs are retained.

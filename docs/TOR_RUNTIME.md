@@ -1,100 +1,73 @@
-# Current runtime execution model
+# Embedded Tor runtime
 
-Run the checksum-pinned AAR's executable libtor.so from Android's extracted native
-library directory using ProcessBuilder. Legacy JNI packaging ensures extraction;
-no executable is downloaded or copied into writable app data at runtime. No JNI
-bridge or Android service is used. This preserves JDK 17/SDK 35 without importing
-the AAR's Java 24 classes. Each restart creates a fresh native process.
+## Bundled executable and provenance
 
-State and onion keys live under private no-backup storage. SOCKS/control bind only
-127.0.0.1; control requires the private 32-byte cookie. TAKEOWNERSHIP and owning
-controller PID terminate an orphan. Closing the runtime closes its controller,
-terminates its child and reaps it asynchronously, with a five-second forced-exit
-bound. Native output is discarded. Process exit/bootstrap/control errors fail
-closed. HS_DESC UPLOADED for this identity gates service readiness.
-
-Validated on API 35 arm64: native start/shutdown/restart and actual onion descriptor
-publication with unchanged persisted address across child restarts. Other ABIs,
-API 26, physical networks and battery remain NOT VERIFIED.
-
-The following sections retain the original dependency investigation and source
-build/update strategy; references to the Java source adapter are historical and
-superseded by the executable model above.
-
----
-
-# Embedded Tor integration
-
-**Qualification blocked:** actual onion-service testing reproduces a native
-mutex abort. The earlier startup-only smoke does not qualify this distribution
-for product use. See TOR_BLOCKER.md. This code is not selected by ChatSession.
-
-## Candidate and provenance
-
-Guardian Project's published `info.guardianproject:tor-android:0.4.9.14` AAR is
-12976254 bytes. It bundles
-arm64-v8a, armeabi-v7a, x86 and x86_64 libtor.so. Native uncompressed bytes total
-30,075,596. Maven AAR SHA-256:
+Guardian Project Maven artifact info.guardianproject:tor-android:0.4.9.14@aar,
+12,976,254 bytes, SHA-256
 `28ff2bb6d4d42eabe57183dedd7a97fce77e8ce4b6f5af6fa03993b3ca054edd`.
+It supplies libtor.so for arm64-v8a, armeabi-v7a, x86 and x86_64 (30,075,596
+uncompressed native bytes total). Gradle verifies the artifact and extracts only
+jni libraries at build time. Its Java 24/SDK 37.1 adapter is not imported.
+JDK 17/SDK 35 remain the application toolchain. No runtime executable downloads.
 
-The AAR requires compile SDK 37.1 and contains Java class major 68 (Java 24).
-The checked-in source adapter recompiles the published source bridge using this
-repository's Java 17/SDK 35 toolchain; only checksum-verified native libraries are
-extracted from the AAR at build time. The installed app downloads no executable.
-See `third_party/tor/README.md` and `TOR_LICENSE.txt` for attribution.
+Android legacy JNI packaging extracts the executable into nativeLibraryDir.
+ProcessBuilder runs it as a fresh child on each start. Loading Tor JNI repeatedly
+in-process caused a reproducible native mutex abort during qualification; that
+approach was removed. See TOR_BLOCKER.md for the resolved investigation.
+This child shares the app UID: crash/lifecycle containment, not a separate sandbox.
 
-`TorRuntime` binds a nonexported local service asynchronously, disables the HTTP
-proxy, restricts SOCKS to loopback, suppresses Tor logs and parses actual bootstrap
-progress through the private Unix control socket. Control authentication relies
-on the Android UID-private directory, not a world-accessible TCP control port.
-Bootstrap timeout is three minutes. This candidate is not wired into ChatSession
-until native lifecycle validation passes. Native startup, shutdown and restart passed on the API 35 arm64 emulator.
-Full bootstrap, connectivity recovery, memory, battery, APK delta and physical
-networking are NOT VERIFIED at M02.
+Tor state and persistent v3 keys live under private no-backup storage. Missing
+established secret keys fail closed. Tor keys are not claimed hardware-backed.
+Virtual onion port 443 maps only to the app's ephemeral loopback TCP listener.
+SOCKS/control bind 127.0.0.1:auto; control requires the private 32-byte cookie.
+HTTP proxy is disabled, output discarded, no addresses/content/configuration UI.
+TAKEOWNERSHIP plus the owning parent PID constrain orphan lifetime. Close releases
+control and reaps the child asynchronously; after five seconds termination escalates,
+then after another two seconds forced termination. Normal exit code 0 is tested.
 
-## Secure updates and source-build strategy
+Bootstrap polls actual status every second with a five-minute initial deadline.
+Onion readiness requires a matching HS_DESC UPLOADED event, not hostname creation
+or bootstrap alone. Remote streams use explicit loopback SOCKS5 domain requests
+for checksum-valid v3 onions; no DNS/system proxy/direct fallback.
 
-Review upstream security announcements before adopting a version. As of this
-investigation Maven Central metadata lists .14; Tor Project has subsequently
-released .15 and .16. Review applicability of fixes; do not claim .14 is latest.
-Do not downgrade to the end-of-life 0.4.8 series to work around build compatibility.
+## Qualification and tradeoffs
 
-1. Resolve the exact Guardian Project source revision and all recursive submodule
-   commits, never a moving master. Retain the source archive and dependency notices.
-2. Verify upstream Tor release signatures using independently verified release-key
-   fingerprints. Local artifact SHA-256 pinning alone is not a signature or proof
-   of source-to-binary reproducibility.
-3. Use the upstream `external/Makefile` native build in an isolated environment
-   with pinned NDK/host toolchain. Record versions, environment, patches and every
-   submodule SHA. Build all four declared ABIs explicitly (upstream now excludes
-   x86 from its defaults). Never run upstream `fetch -c` inside this application
-   repository: that command resets and cleans its checkout.
-4. Compile the bridge from reviewed source with Java 17 and SDK 35; retain JNI
-   class/field names. Review service locking, shutdown races, logs, manifest and
-   private socket permissions. Avoid silently stripping AAR compatibility checks.
-5. Build twice independently; compare native hashes and investigate differences.
-   No reproducible-build result is claimed before this is executed.
-6. Update Gradle's explicit AAR SHA-256, dependency verification and bridge source
-   together. Run native startup/bootstrap/failure/shutdown/restart tests on API 26
-   and 35 and required ABIs. Measure APK size/PSS. Update evidence before adoption.
+API 35 arm64 emulator: actual start/shutdown/restart, descriptor publication with
+stable keys, two independent Tor clients, mutual TLS and text/files/reconnect PASS.
+API 26, other ABIs, physical networks and battery remain NOT VERIFIED. Four ABI
+builds are produced; this is not a claim of runtime execution on all architectures.
+Tor dominates native size/memory and adds bootstrap/latency costs. API-native TLS
+on API 26 lacks the selected TLS 1.3 contract; pinned Conscrypt Android 2.8.0 provides
+it. Bouncy Castle bcprov 1.86 supplies SHA3 address checks; jtorctl 0.4.5.7 supplies
+standard control protocol. No custom crypto primitive or handshake is introduced.
 
-Primary sources:
-- https://github.com/guardianproject/tor-android
-- https://repo.maven.apache.org/maven2/info/guardianproject/tor-android/maven-metadata.xml
-- https://lists.torproject.org/mailman3/hyperkitty/list/tor-announce%40lists.torproject.org/latest
-- https://blog.torproject.org/sunsetting-tor-048/
+## Secure update procedure
 
-## Persistent service candidate
+The inspected Android AAR .14 is not claimed to be the newest Tor core. Core
+.15/.16 announcements exist; review security applicability before distribution.
+A checksum ensures the selected bytes, not reproducible source-to-binary provenance.
 
-Tor manages the v3 secret/public keys in the UID-private no-backup onion-v3
-folder. A committed creation marker makes a missing previously established secret
-key an error. OnionAddress checks canonical Base32, version 3 and the SHA3-256
-checksum using Bouncy Castle bcprov-jdk18on 1.86 (confirmed published coordinates;
-Android's provider lacks SHA3). The library is checksum-pinned; its license is
-bundled. No provider is globally replaced. Keys are not claimed hardware-backed.
+1. Review Tor/Guardian security notices, release signatures and dependency advisories.
+   Resolve exact release coordinates, Guardian source revision and recursive submodule
+   SHAs; verify upstream signing-key fingerprints independently.
+2. Acquire the exact AAR from Maven Central, record hash/native inventory/licenses and
+   source-to-binary evidence. Inspect executable compatibility on every declared ABI.
+   Reject missing provenance rather than silently changing artifact/version.
+3. If rebuilding, isolate upstream external/Makefile with pinned NDK/host tools and
+   submodules; explicitly enable all four ABIs (upstream defaults can omit x86).
+   Record patches/environment; build independently twice and compare native hashes.
+   Do not run destructive upstream fetch/reset commands in this repository.
+4. Review child arguments, control-cookie permissions, logs, ownership and executable
+   extraction. Keep the Java adapter excluded unless separately qualified for JDK17.
+5. Update Gradle coordinates, explicit AAR digest, verification metadata and notices
+   together. Review every new checksum; never regenerate blindly for unreviewed bytes.
+6. Run host tests/lint, minified release packaging, native lifecycle/bootstrap/failure,
+   persistent onion, TLS mismatch/downgrade, real two-client text/files/reconnect and
+   lifecycle suites. Execute API26/35 and all required ABI runtime checks when hardware
+   exists. Record APK sizes, PSS, performance and physical gaps before adoption.
 
-The candidate maps virtual port 443 to a supplied loopback listener. It enables
-networking after installing actual HS_DESC listeners. Only the matching UPLOADED
-event reports publication; neither hostname creation nor bootstrap alone does.
-The reset method requires callers to obtain confirmation and refuses while Tor
-is running. Product UI wiring/reset confirmation remain pending M11.
+Sources: https://github.com/guardianproject/tor-android ;
+https://repo.maven.apache.org/maven2/info/guardianproject/tor-android/maven-metadata.xml ;
+https://lists.torproject.org/mailman3/hyperkitty/list/tor-announce%40lists.torproject.org/latest ;
+https://blog.torproject.org/sunsetting-tor-048/ .
+Licenses/provenance are retained in third_party/tor.

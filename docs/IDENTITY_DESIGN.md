@@ -1,3 +1,5 @@
+> HISTORICAL WEBRTC PREVIEW EVIDENCE. Unsupported by the Tor product. See README.md and docs/VALIDATION.md for current behavior.
+
 # Identity design decision for 0.0.1
 
 Use a persistent ECDSA WebRTC DTLS certificate as the peer identity. Compare the

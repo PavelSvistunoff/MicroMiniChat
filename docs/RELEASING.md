@@ -1,85 +1,62 @@
-# Building and Publishing 0.0.1
+# Building a Tor preview
 
-## Signed builds
-
-Use JDK 17/SDK 35 and the Gradle wrapper. The local signer created for this release
-is stored in `.release-signing/release.jks`; its password is in the adjacent private
-`password.txt`. Both are ignored, directory permissions are 0700 and files 0600.
-Back these up securely: future APK updates must use the same signing identity.
-Do not put secrets in Git, shell arguments, release notes or chat.
+Use JDK17, Android SDK35/build-tools35.0.0 and the pinned wrapper. The configured
+version is 0.1.0-tor-preview/code4. Historical signed release/0.0.1 artifacts and
+tags are immutable and are not the Tor product. Do not overwrite them.
 
 ```sh
-python3 tools/create_release_key.py  # creates once; refuses to replace an existing key
+./gradlew --no-daemon :app:assembleDebug :app:assembleRelease
+```
+
+Four ABI APKs and universal APK are under app/build/outputs/apk/debug or release.
+Ordinary release builds are minified/resource-shrunk and unsigned without a signer.
+Install debug APKs only on test devices; a debug signer cannot update a differently
+signed installed app. Never uninstall a user's existing app to bypass this restriction.
+
+For signed local builds, retain the established APK signer for upgrades. Configure
+MMC_RELEASE_STORE and MMC_RELEASE_PASSWORD privately in the environment, or use the
+ignored .release-signing/release.jks and password.txt with tools/build_release.py.
+The helper supplies secrets through a subprocess environment, not command arguments.
+tools/create_release_key.py creates a local signer once and refuses replacement;
+a different key is appropriate only for a new test installation. Never commit
+keys/passwords or paste them into chat.
+
+```sh
 python3 tools/build_release.py
+python3 tools/check_tor_apks.py
 ```
 
-The build script supplies MMC_RELEASE_STORE/MMC_RELEASE_PASSWORD privately through
-the subprocess environment. Without signing configuration, ordinary Gradle release
-builds are unsigned. Outputs are under `app/build/outputs/apk/release/`.
-The app signer is separate from each user's DTLS peer identity.
+Before distribution run README checks and real-Tor tests. Verify every signature
+using SDK apksigner verify --verbose --print-certs. The artifact audit checks
+ZIP alignment, manifest/version/permissions, absence of the release debug provider,
+exact native inventory, no WebRTC dex and bundled notices. Supplying
+--expected-release-signer with the public certificate SHA256 also verifies every
+release signature and its continuity. It records sizes/hashes
+from the current Gradle output metadata rather than stale APKs. --build-tools can
+select a nonstandard SDK tool directory. Retain SHA256SUMS and the source commit.
+Review Tor advisories, notices and physical gaps. Signing is not security acceptance.
 
-Public APK signer SHA-256 certificate fingerprint:
-`2e6381e1b46492b37b3f13c8ba337fac36ae49a119cfc8f9d69a928f6168df9b`.
-
-## Validation and packaging
-
-Run the README checks. Verify APKs with Android build-tools `apksigner verify`; check
-64-bit ZIP/native alignment. Confirm release manifest version 0.0.1/code 1, only
-INTERNET/ACCESS_NETWORK_STATE permissions, backup exclusions, and absence of the debug
-DocumentsProvider. Keep JNI callbacks under org.webrtc and org.jni_zero during shrinking.
-
-Collect the four per-ABI APKs and universal APK under the explicitly approved tracked directory `release/0.0.1/`, name
-them `microminichat-0.0.1-ABI.apk`, and compute SHA256SUMS. Resource/size evidence belongs
-in `docs/`; raw SDP, private keys and user-content logs do not.
-
-For release-native UI testing on a disposable emulator, `-PqaPeer` builds a separate
-QA package in `build/qa-peer/`; it is not a release download. The smoke harness requires
-`--replace-test-install` and an emulator serial. It temporarily disables cached-app
-freezing to model two foreground phones, restores that setting, and removes its QA peer.
-This is not proof of physical-network or background-delivery behavior.
-
-## Main commit and GitHub publication
-
-Review changes, commit to main, create annotated tag `v0.0.1`, then push main and tag.
-Keep the source tag unchanged when following it with an artifact/documentation-only commit.
-The publisher permits only those changes after the tag and rejects runtime/build changes.
-Existing GitHub credentials are required; never paste access tokens into chat.
-`python3 tools/github_release.py --check` only verifies access. After a clean reviewed
-main/tag are pushed, `--publish` creates a draft preview, uploads five APKs/checksums,
-verifies reported asset digests and publishes it as a prerelease. It refuses to replace
-an existing published release or mismatching asset. Physical acceptance remains deferred;
-do not label this preview as independently audited or universally reachable.
-
-APK VCS metadata is disabled deliberately: artifact hashes are reviewed with the
-source commit/tag, without embedding the previous precommit SHA or creating a
-self-reference between committed metrics and the signed APK. The release tag and
-SHA256SUMS establish the published source/artifact association.
-
-
-## TURN development preview
-
-Source now uses version `0.0.2-preview` / code 2. Do not rerun the 0.0.1-only
-packager/publisher for this source: its release tag and APKs remain immutable.
-`tools/build_release.py` signs the configured version with the existing private
-signer. Local TURN preview APKs can be placed under ignored `release/0.0.2-preview/`;
-they are not a published release or evidence of successful real-internet relay tests.
-
-
-## Phone-hosted development preview
-
-`0.0.3-preview` / code 3 adds a temporary pinned TLS server on the creator’s phone.
-Keep original release artifacts/tags unchanged. Local signed APKs are staged under
-ignored `release/0.0.3-preview/`; do not publish them as the original 0.0.1 release.
-For two signed app UIDs on a disposable emulator, build the ordinary release with
-`tools/build_release.py`, then its test peer using `tools/build_release.py -PqaPeer`.
-After verifying/packaging the main APK, run:
+## Native UI validation on two emulators
 
 ```sh
-python3 tools/phone_pairing_smoke.py --device emulator-5554 --replace-test-install
+python3 tools/tor_ui_smoke.py --device emulator-5554 --peer-device emulator-5556 --replace-test-install --variant release
 ```
 
-This explicitly replaces test installations, temporarily changes/restores the cached-app
-freezer to model two foreground phones, uses the real clipboard for the invitation,
-compares full fingerprints and checks a persisted text ACK. It never logs invitations,
-addresses or fingerprints. The QA package is removed afterward. This remains a single
-emulator test, not public IPv4/IPv6 reachability or physical background acceptance.
+This replaces installations only on two distinct disposable emulators, never a
+user device/profile. Both ordinary signed apps remain foreground in separate
+Android instances. The tool reads the Android Sharesheet invitation in memory,
+checks its public fingerprint and enters it through non-PTY stdin without placing
+the capability in host command arguments/output. It verifies exact input, explicit
+Connect, bilateral full fingerprints, durable text ACK, force-stop history and
+verified automatic reconnect. It also opens bundled licenses. It stops both apps
+in cleanup. MMC_ADB can select a nonstandard adb path.
+
+A single emulator cycling cached activities did not qualify this path; finite
+background grace and UI automation cannot substitute for two open phones. Two
+emulators still do not establish physical Wi-Fi/mobile/CGNAT/OEM battery acceptance.
+The obsolete probe, extra QA package variant, old phone/relay smoke scripts and
+0.0.1 publisher/packager are removed to avoid testing/publishing a dead architecture.
+
+This migration authorizes local builds/commits, not publication, release creation,
+new infrastructure or uploads. APKs remain ignored build outputs. Future publication
+requires explicit authorization and a reviewed source/artifact association.

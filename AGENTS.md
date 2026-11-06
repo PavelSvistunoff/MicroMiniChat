@@ -6,23 +6,20 @@ The user explicitly approved the complete Tor migration and terminal UI redesign
 in `TOR_MIGRATION_SPEC.md`, which supersedes the older WebRTC product boundaries.
 Implement on the dedicated feature branch, commit each validated milestone, and do
 not publish APKs/create releases as part of this migration without authorization.
-Existing WebRTC code is transitional until its Tor replacement is functional; no
+The Tor replacement is the only product runtime; no
 new WebRTC fallback, TURN, signaling backend or manual network setup is permitted.
 Preserve local history and require explicit peer re-verification where necessary.
 
-
-The user authorized completing MicroMiniChat and committing to `main` before releasing
-`0.0.1`. Physical-device acceptance was explicitly deferred; never report unexecuted
-hardware/network checks as passing. Keep `TASKS.md` and `docs/VALIDATION.md` accurate.
+Physical-device acceptance was explicitly deferred; never report unexecuted
+hardware/network checks as passing. Keep TASKS.md and docs/VALIDATION.md accurate.
 Inspect, implement, test, fix, review security/complexity and document each milestone.
 
 ## Project Structure
 
-`app/src/main/` contains Java/native Views, transport, signaling, identity, protocol,
+`app/src/main/` contains Java/native Views, Tor transport, identity, protocol,
 SQLite storage, file streaming and lifecycle policy. `app/src/test/` holds JVM tests;
 `app/src/androidTest/` holds emulator/device integration tests. The protected fixture
-provider in `app/src/debug/` must never appear in a release. `probe/` is a synthetic,
-unauthenticated transport harness. `tools/` contains checks/release tooling; `docs/`
+provider in `app/src/debug/` must never appear in a release. `tools/` contains checks/release tooling; `docs/`
 contains evidence. `third_party/` retains dependency notices.
 
 ## Build and Test
@@ -32,7 +29,6 @@ Use JDK 17, SDK 35 and build-tools 35.0.0; set `ANDROID_HOME` or untracked
 
 - `./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug`: host build/checks.
 - `./gradlew :app:connectedDebugAndroidTest`: emulator/device integration.
-- `./gradlew :probe:testDebugUnitTest`: probe unit checks.
 - `python3 -m unittest discover -s tools -p 'test_*.py'`: host contracts/measurements.
 - `python3 tools/build_release.py`: signed release with a local signer; see releasing docs.
 
@@ -44,12 +40,9 @@ Android lint is the static check. Record measurements, not guesses.
 
 Use four-space Java indentation, UpperCamelCase classes, lowerCamelCase methods and
 clear resource names. Native Views/platform APIs are preferred. Keep dependencies
-minimal/pinned; review verification metadata changes. Never log text, SDP, network
+minimal/pinned; review verification metadata changes. Never log messages, invitations, network
 addresses, keys or file contents. Use established cryptography; do not add a new
-handshake. The user explicitly approved optional TURN on 2026-11-01; keep relay
-configuration opt-in and never commit credentials. The latest user choice is pairing
-hosted on the creator’s phone, with accepted public-IP/forwarding limits; do not deploy
-a public signaling service. No other backend/cloud service without explicit approval.
+handshake. No external application backend/cloud service without explicit approval.
 Read SPEC, ARCHITECTURE, SECURITY and PROTOCOL before changing these boundaries.
 
 ## Commits and Releases

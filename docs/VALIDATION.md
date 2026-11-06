@@ -579,3 +579,20 @@ incoming delivery, file resume, QR scanner or anonymity/independent-audit guaran
 Native source-to-binary reproducibility and newer Tor core fixes remain upstream
 qualification/update work, not an invented successful audit. See SECURITY.md,
 TOR_RUNTIME.md, ANDROID_LIFECYCLE.md and PHYSICAL_TEST_PLAN.md.
+
+## Tor M17 — final documentation and source association
+
+Tor-only README, SPEC, ARCHITECTURE, PROTOCOL, SECURITY, TASKS and AGENTS now agree
+with the implementation. Pairing/install/build/update/lifecycle/physical checklists
+are current. Historical WebRTC guides are explicitly unsupported evidence; no old
+phone/relay setup is presented as a supported product path. The authoritative
+TOR_MIGRATION_SPEC.md is unchanged. No README.uk.md existed; Ukrainian product
+resources and format/plural tests are complete.
+
+Implementation/qualification commit: 4cb3492 (M16). Its signed APK hashes and actual
+emulator properties are recorded in TOR_APK_METRICS.json and TOR_UI_SMOKE.json.
+The final documentation commit changes no runtime/build behavior. Full software
+migration is implemented; physical acceptance remains explicitly deferred. No
+backend deployment, APK publication, release/tag creation or user identity/data
+reset was performed. Historical 0.0.1 APKs remain untouched. The unrelated staged
+.DS_Store is intentionally excluded from migration commits.

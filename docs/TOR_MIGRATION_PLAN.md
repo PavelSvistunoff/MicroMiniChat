@@ -70,3 +70,13 @@ remain unverified at this audit step.
 
 Each milestone requires implementation, relevant validation, review, evidence and
 its own commit. This file is an audit/plan, not a completion claim for M02–M17.
+
+## Execution outcome
+
+The planned Tor-only architecture is implemented through M17; see TASKS.md and
+docs/VALIDATION.md for exact final checks and remaining qualification gates.
+The original JNI candidate crashed during real onion testing and was removed;
+the verified bundled executable now runs as an owned child, keeping JDK17/SDK35.
+Conscrypt provides TLS1.3 on the API26 compile baseline. WebRTC runtime/source/probe
+are removed, while historical notices and immutable release artifacts remain.
+Physical acceptance stays explicitly deferred; no publication is part of this work.
