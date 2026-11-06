@@ -322,6 +322,8 @@ Older milestones above describe historical WebRTC previews, not Tor acceptance.
   actual native start/shutdown/restart validated on API 35 arm64.
 - Tor M03: PASS — actual onion descriptor publication twice with stable identity;
   no-backup keys, strict address checksum and missing-key guard implemented.
-- Tor M04–M17: not implemented. No Tor-native messenger acceptance is claimed.
+- Tor M04: invitation codec/capability/trust primitives PASS (27 JVM and 2 emulator
+  checks); end-to-end pairing UI/transport integration follows M05/M06/M11.
+- Tor M05–M17: pending. No Tor-native messenger acceptance is claimed.
 
 See docs/TOR_BLOCKER.md for the resolved runtime issue and historical evidence. Existing historical milestones and APKs do not satisfy this migration.

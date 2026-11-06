@@ -251,3 +251,11 @@ TAKEOWNERSHIP and owning PID, suppressed output, bounded asynchronous cleanup.
 Real OnionIntegrationTest PASS on API 35 arm64: descriptor publication, child
 shutdown/restart and unchanged onion identity. BUILD SUCCESSFUL in 19 seconds.
 This supersedes the blocked qualification above; physical testing remains pending.
+
+## Tor M04 — invitations and durable pairing primitives
+
+27 JVM tests PASS, including invitation canonical roundtrip, immutable capability,
+version/size/encoding/expiration rejection. Two API 35 emulator tests PASS for
+wrong-capability rejection, durable single-use consumption across reopen,
+expiration/cancellation and atomic route trust with identity-replacement blocking.
+Human verification/UI and transport binding are integrated in subsequent milestones.
