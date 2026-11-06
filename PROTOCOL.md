@@ -106,3 +106,32 @@ answer, then closes the single-use listener. This ACK acknowledges signaling onl
 not peer trust, message delivery or WebRTC connectivity. No application content or
 TURN password goes over this socket. Malformed/authentication/timeout failures close
 the exchange; the user must create a fresh invitation. Limits are in PHONE_PAIRING.md.
+
+## Tor transport v2 (replacement protocol)
+
+The new path uses TLS 1.3 and ALPN mmc-tor/2 over an explicitly configured loopback
+SOCKS proxy. Only checksum-valid canonical .onion domains are dialed; DNS is never
+used for remote routing and there is no direct fallback. Mutual certificate proof
+precedes the pairing greeting. The creator requires a live capability for initial
+pairing; reconnect requires both persisted peer certificate and onion route.
+
+Inside TLS, the initiator sends magic 0x4d544802, mode (1 pairing / 2 reconnect),
+a fresh session UUID (16), its onion route (62 ASCII) and capability (32; zeros for
+reconnect). The responder verifies authorization and replies with the same magic
+and its route (62). Invitation certificate pin and reply route must both match.
+A consumed capability is durably removed before success is returned.
+
+Each stream sends preface 0x4d544302, then records: length (4) and channel (1) plus
+body. Maximum body is 65,536 bytes; negative/zero/oversized lengths are rejected
+before allocation. Channels: 0 application control, 1 file chunk, 2 verified marker
+(empty), 3 heartbeat (empty). Product frames are accepted only after both local
+and remote verification markers. Existing application Frame v1 records/session
+UUIDs and durable ACK semantics are retained. Control queue is capped at 64 KiB,
+file queue at 128 KiB, plus one bounded in-flight record. Control has priority;
+stop-and-wait file chunks prevent large file enqueues from starving text.
+
+Read timeout is 90 seconds; a 30-second idle heartbeat detects dead peers. A
+60-second write watchdog closes a stuck socket. Unverified streams expire after
+five minutes. Handshake workers are capped at two with no waiting queue, incoming
+backlog four, greeting/TLS timeout 60 seconds, outgoing Tor connect bound 120 seconds.
+No product success state is emitted before mutual authentication/verification.

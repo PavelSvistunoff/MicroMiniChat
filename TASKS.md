@@ -326,6 +326,8 @@ Older milestones above describe historical WebRTC previews, not Tor acceptance.
   checks); end-to-end pairing UI/transport integration follows M05/M06/M11.
 - Tor M05: PASS — mutual TLS 1.3, persistent Keystore keys and legacy PEM
   continuity; two API 35 arm64 authentication/migration tests pass.
-- Tor M06–M17: pending. No Tor-native messenger acceptance is claimed.
+- Tor M06: PASS — bounded multiplexed stream and real two-client onion/TLS
+  integration including bilateral verification gating; JVM/lint pass.
+- Tor M07–M17: pending. No Tor-native messenger acceptance is claimed.
 
 See docs/TOR_BLOCKER.md for the resolved runtime issue and historical evidence. Existing historical milestones and APKs do not satisfy this migration.

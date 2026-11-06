@@ -22,6 +22,7 @@ public final class TorRuntime implements AutoCloseable {
     private final AtomicBoolean closed = new AtomicBoolean();
     private final OnionIdentity onion;
     private final int listenerPort;
+    private final String storage;
     private volatile Process process;
     private volatile Socket controlSocket;
     private TorControlConnection control;
@@ -31,11 +32,14 @@ public final class TorRuntime implements AutoCloseable {
     private String onionAddress = "";
     private volatile boolean published;
     public TorRuntime(Context context, Listener listener) { this(context, listener, 0); }
-    public TorRuntime(Context context, Listener listener, int listenerPort) {
+    public TorRuntime(Context context, Listener listener, int listenerPort) { this(context, listener, listenerPort, "main"); }
+    public TorRuntime(Context context, Listener listener, int listenerPort, String storage) {
+        if (!storage.matches("[a-zA-Z0-9_-]{1,64}")) throw new IllegalArgumentException();
+        this.storage = storage;
         this.context = context.getApplicationContext();
         if (listenerPort < 0 || listenerPort > 65535) throw new IllegalArgumentException();
         this.listenerPort = listenerPort;
-        onion = new OnionIdentity(this.context);
+        onion = new OnionIdentity(this.context, storage);
         this.listener = listener;
     }
     public static boolean isNativeRunning() { return PROCESSES.stream().anyMatch(Process::isAlive); }
@@ -44,7 +48,7 @@ public final class TorRuntime implements AutoCloseable {
             if (closed.get() || process != null) return;
             String stage = "PREPARE";
             try {
-                File data = new File(context.getNoBackupFilesDir(), "tor-data");
+                File data = new File(context.getNoBackupFilesDir(), "tor-data" + (storage.equals("main") ? "" : "-" + storage));
                 if (!data.isDirectory() && !data.mkdir()) throw new IOException();
                 File portFile = new File(data, "control-port");
                 if (portFile.exists() && !portFile.delete()) throw new IOException();

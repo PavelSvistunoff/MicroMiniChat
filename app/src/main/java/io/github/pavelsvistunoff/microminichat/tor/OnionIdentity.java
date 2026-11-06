@@ -9,9 +9,12 @@ import java.nio.charset.StandardCharsets;
 public final class OnionIdentity {
     private final File directory;
     private final SharedPreferences flags;
-    public OnionIdentity(Context context) {
-        directory = new File(context.getNoBackupFilesDir(), "onion-v3");
-        flags = context.getSharedPreferences("onion_identity_v1", Context.MODE_PRIVATE);
+    public OnionIdentity(Context context) { this(context, "main"); }
+    public OnionIdentity(Context context, String storage) {
+        if (!storage.matches("[a-zA-Z0-9_-]{1,64}")) throw new IllegalArgumentException();
+        String suffix = storage.equals("main") ? "" : "-" + storage;
+        directory = new File(context.getNoBackupFilesDir(), "onion-v3" + suffix);
+        flags = context.getSharedPreferences("onion_identity_v1" + suffix, Context.MODE_PRIVATE);
     }
     public File prepare() throws IOException {
         if (flags.getBoolean("created", false) && !new File(directory, "hs_ed25519_secret_key").isFile())

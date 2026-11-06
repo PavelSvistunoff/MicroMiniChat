@@ -268,3 +268,13 @@ certificate fingerprint and exact encrypted file bytes. The initial Keystore
 signing-policy mismatch was fixed by authorizing DIGEST_NONE for Conscrypt's
 standard prehashed ECDSA operation. Conscrypt 2.8.0 is pinned from its actual
 published AAR with retained license. No TLS downgrade/fallback is configured.
+
+## Tor M06 — real onion/TLS framed transport
+
+PASS: TorTransportIntegrationTest operates two independent embedded Tor clients,
+persistent onion directories, actual descriptor publication, invitation capability,
+mutual TLS and framed synthetic text through the Tor network. Product sending is
+refused before verification; one-sided verification stays unready; two-sided
+verification permits the frame. This is an emulator/one-host Tor-network test,
+not a physical cross-network result. JVM suite (28 tests) and Android lint PASS.
+Total combined build/test execution: 1m16s, not a bootstrap-only measurement.
