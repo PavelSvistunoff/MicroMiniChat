@@ -91,4 +91,5 @@
         <item quantity="many">%d повідомлень на цій сторінці</item>
         <item quantity="other">%d повідомлення на цій сторінці</item>
     </plurals>
+    <string name="previous_pairing">[історія] попередня перевірена пара</string>
 </resources>

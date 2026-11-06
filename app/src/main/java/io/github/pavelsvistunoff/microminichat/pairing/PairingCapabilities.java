@@ -17,11 +17,13 @@ public final class PairingCapabilities {
     }
     public synchronized void activate(TorInvite invite) throws IOException {
         if (!preferences.edit().putString("hash", Base64.getEncoder().encodeToString(hash(invite.capability())))
-                .putLong("expires", invite.expires).commit()) throw new IOException("CAPABILITY_COMMIT");
+                .putLong("expires", invite.expires).putLong("elapsedDeadline", android.os.SystemClock.elapsedRealtime() + TorInvite.LIFETIME).commit()) throw new IOException("CAPABILITY_COMMIT");
     }
     public synchronized boolean consume(byte[] secret, long now) throws IOException {
         String saved = preferences.getString("hash", "");
-        if (saved.isEmpty() || now >= preferences.getLong("expires", 0)
+        if (saved.isEmpty() || now < preferences.getLong("expires", 0) - TorInvite.LIFETIME
+                || now >= preferences.getLong("expires", 0)
+                || android.os.SystemClock.elapsedRealtime() >= preferences.getLong("elapsedDeadline", 0)
                 || !MessageDigest.isEqual(hash(secret), Base64.getDecoder().decode(saved))) return false;
         // Remove durably before returning success, including after a process crash/lost response.
         cancel();

@@ -112,7 +112,7 @@ public final class TorRuntime implements AutoCloseable {
                 worker.scheduleWithFixedDelay(this::poll, 0, 1, TimeUnit.SECONDS);
             } catch (Exception e) {
                 String code = e.getMessage();
-                fail(code != null && code.matches("TOR_[A-Z_]+") ? code : "TOR_" + stage + "_" + e.getClass().getSimpleName());
+                fail(code != null && code.matches("(?:TOR|ONION)_[A-Z_]+") ? code : "TOR_" + stage + "_" + e.getClass().getSimpleName());
             }
         });
     }

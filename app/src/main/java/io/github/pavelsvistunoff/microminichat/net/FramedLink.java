@@ -52,7 +52,7 @@ public final class FramedLink implements AutoCloseable {
         new Thread(this::readLoop, "tls-reader").start();
     }
     public void verify() {
-        if (closed.get()) return;
+        if (closed.get() || localVerified) return;
         localVerified = true;
         if (!enqueue(2, new byte[0])) { close(); return; }
         ready();
@@ -107,7 +107,11 @@ public final class FramedLink implements AutoCloseable {
         try {
             DataInputStream in = new DataInputStream(socket.getInputStream());
             if (in.readInt() != 0x4d544302) throw new IOException("STREAM_VERSION");
+            long window = System.nanoTime(); int records = 0;
             while (!closed.get()) {
+                long now = System.nanoTime();
+                if (now - window >= TimeUnit.SECONDS.toNanos(1)) { window = now; records = 0; }
+                if (++records > 512) throw new IOException("STREAM_RATE");
                 byte[] record = readRecord(in);
                 if (record[0] == 2) { remoteVerified = true; ready(); }
                 else if (record[0] != 3) {

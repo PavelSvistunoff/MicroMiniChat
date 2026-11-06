@@ -53,7 +53,9 @@ public final class OnionIdentity {
             }
             bytes = out.toByteArray();
         }
-        String address = OnionAddress.require(new String(bytes, StandardCharsets.US_ASCII).trim());
+        String address;
+        try { address = OnionAddress.require(new String(bytes, StandardCharsets.US_ASCII).trim()); }
+        catch (IllegalArgumentException e) { throw new IOException("ONION_IDENTITY_CORRUPT"); }
         if (!flags.edit().putBoolean("created", true).commit()) throw new IOException("ONION_IDENTITY_COMMIT");
         return address;
     }

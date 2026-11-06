@@ -94,4 +94,5 @@
         <item quantity="one">%d message on this page</item>
         <item quantity="other">%d messages on this page</item>
     </plurals>
+    <string name="previous_pairing">[history] earlier verified pairing</string>
 </resources>

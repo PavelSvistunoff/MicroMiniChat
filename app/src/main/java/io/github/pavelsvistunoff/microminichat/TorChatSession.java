@@ -58,6 +58,7 @@ public final class TorChatSession {
         }); }
     };
     private TorInvite joining;
+    private long pairingEpoch;
     private long generation, before = Long.MAX_VALUE;
     private volatile Runnable watcher;
     public volatile State state = State.OFFLINE;
@@ -65,7 +66,7 @@ public final class TorChatSession {
     public volatile int bootstrap;
     public volatile boolean ready, verified, hasOlder;
     public volatile String invitation = "", localFingerprint = "", remoteFingerprint = "", localOnion = "", remoteOnion = "";
-    public volatile String draft = "", diagnostic = "";
+    public volatile String draft = "", diagnostic = "", historyPeer = "";
     public volatile List<MessageDatabase.Row> history = Collections.emptyList();
     public TorChatSession(Context context) { this(context, "main"); }
     public TorChatSession(Context context,String storage) { this(context,storage,120000); }
@@ -88,7 +89,7 @@ public final class TorChatSession {
     interface Action { void run() throws Exception; }
     private void execute(Action action) {
         if (terminated.get()) return;
-        worker.post(() -> { if (terminated.get()) return; try { action.run(); } catch (Exception e) { fail(Problem.STORAGE); } });
+        worker.post(() -> { if (terminated.get()) return; try { action.run(); } catch (Exception e) { closeLink(); fail(Problem.STORAGE); } });
     }
     public void watch(Runnable watcher) { this.watcher = watcher; changed(); }
     private void changed() { main.post(() -> { Runnable current = watcher; if (current != null) current.run(); }); }
@@ -104,21 +105,27 @@ public final class TorChatSession {
                 if (diagnostic.contains("IDENTITY_CHANGED")) fail(Problem.IDENTITY_CHANGED);
                 else { fail(Problem.CONNECTION); scheduleReconnect(); } } }); }
             @Override public void authenticating() { execute(() -> { if (token == generation && link == null) { state = State.AUTHENTICATING; changed(); } }); }
-            @Override public void connected(SSLSocket socket,UUID session,String pin,String route,boolean outgoing) {
+            @Override public void connected(SSLSocket socket,UUID session,String pin,String route,boolean outgoing,long epoch) {
                 if (terminated.get()) { try { socket.close(); } catch (Exception ignored) { } return; }
                 worker.post(() -> {
                     try {
-                        if (terminated.get() || token != generation) { socket.close(); return; }
+                        if (terminated.get() || token != generation || (epoch >= 0 && epoch != pairingEpoch)) { socket.close(); return; }
                         attach(socket,session,pin,route,outgoing);
                     } catch (Exception e) { try { socket.close(); } catch (Exception ignored) { } diagnostic = "ATTACH_" + e.getClass().getSimpleName(); fail(Problem.CONNECTION); }
                 });
             }
         });
+        connector.pairingEpoch = pairingEpoch;
         tor = new TorRuntime(context, new TorRuntime.Listener() {
             @Override public void state(int progress,boolean bootstrapped,boolean error) { execute(() -> {
                 if (token != generation) return;
                 bootstrap = progress;
-                if (error) { stopTor(); fail(Problem.CONNECTION); scheduleReconnect(); return; }
+                if (error) {
+                    String code = tor.failureCode; stopTor(); diagnostic = code;
+                    if (code.startsWith("ONION_IDENTITY")) fail(Problem.IDENTITY);
+                    else { fail(Problem.CONNECTION); scheduleReconnect(); }
+                    return;
+                }
                 if (link == null && localOnion.isEmpty()) state = State.CONNECTING_TOR;
                 changed();
             }); }
@@ -134,7 +141,7 @@ public final class TorChatSession {
         tor.start();
     }
     public void createChat() { execute(() -> {
-        if (!trust.trusted().isEmpty()) { fail(Problem.PAIRING); return; }
+        if (!trust.route().isEmpty()) { fail(Problem.PAIRING); return; }
         wanted = true; cancelPairingInternal(); closeLink(); pairing = true; createRequested = true;
         startTor(); if (!localOnion.isEmpty()) makeInvitation();
     }); }
@@ -287,13 +294,17 @@ public final class TorChatSession {
     }); }
     public void retryMessages() { execute(() -> { if (protocol != null && ready) { protocol.retry(SystemClock.elapsedRealtime()); scheduleTick(); } }); }
     private void refreshHistory() {
-        String peer = remoteFingerprint.isEmpty() ? trust.trusted() : remoteFingerprint;
-        MessageDatabase.Page page = database.page(peer,before); hasOlder = page.more;
-        history = database.rows(peer,before); transferHistory = database.transferRows(peer); changed();
+        historyPeer = trust.trusted();
+        history = database.rows(null,before);
+        hasOlder = !history.isEmpty() && database.hasRowsBefore(history.get(0).rowId);
+        transferHistory = database.transferRows(null); changed();
     }
     public void loadOlder() { execute(() -> { if (hasOlder && !history.isEmpty()) { before = history.get(0).rowId; refreshHistory(); } }); }
     public void latestHistory() { execute(() -> { before = Long.MAX_VALUE; refreshHistory(); }); }
-    public void clearHistory() { execute(() -> { historyGeneration++; if (transfers != null) transfers.cancel(); database.clearHistory(trust.trusted()); refreshHistory(); }); }
+    public void clearHistory() { execute(() -> {
+        historyGeneration++; closeLink(); fileState = ""; fileName = ""; cleanupRequired = false;
+        database.clearAllHistory(); refreshHistory(); scheduleReconnect();
+    }); }
     public void resetTrust() { execute(() -> { wanted = false; stopTor(); trust.clear(); refreshHistory(); }); }
     public void resetIdentity() { execute(() -> {
         wanted = false; stopTor();
@@ -304,13 +315,20 @@ public final class TorChatSession {
         }),5500);
     }); }
     public void cancelPairing() { execute(() -> { cancelPairingInternal(); closeLink(); changed(); }); }
-    private void cancelPairingInternal() throws Exception { capabilities.cancel(); if (connector != null) connector.cancelPending(); pairing = false; createRequested = false; joining = null; invitation = ""; }
+    private void cancelPairingInternal() throws Exception { capabilities.cancel(); pairingEpoch++; if (connector != null) { connector.pairingEpoch = pairingEpoch; connector.cancelPending(); } pairing = false; createRequested = false; joining = null; invitation = ""; }
     private void closeLink() {
-        FramedLink old = link; link = null; worker.removeCallbacks(tick); protocol = null; ready = false; verified = false;
-        if (old != null) { old.close(); database.interrupt(remoteFingerprint); }
-        if (transfers != null) { transfers.close(); transfers = null; }
+        FramedLink old = link; link = null;
+        FileTransfers oldFiles = transfers; transfers = null;
+        String previousPeer = remoteFingerprint;
+        worker.removeCallbacks(tick); protocol = null; ready = false; verified = false;
         incomingOffer = null; filesEnabled = false;
-        remoteFingerprint = ""; remoteOnion = ""; session = null; refreshHistory();
+        remoteFingerprint = ""; remoteOnion = ""; session = null;
+        if (old != null) old.close();
+        if (oldFiles != null) oldFiles.close();
+        try {
+            if (old != null && !previousPeer.isEmpty()) database.interrupt(previousPeer);
+            refreshHistory();
+        } catch (RuntimeException e) { fail(Problem.STORAGE); }
     }
     private void stopTor() throws Exception {
         worker.removeCallbacks(reconnect); generation++; cancelPairingInternal(); closeLink();

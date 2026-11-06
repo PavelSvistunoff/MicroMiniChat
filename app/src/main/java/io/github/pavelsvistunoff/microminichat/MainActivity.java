@@ -197,8 +197,9 @@ public final class MainActivity extends Activity {
         public View getView(int position,View recycled,android.view.ViewGroup parent){LinearLayout item=column();int gap=dimension(R.dimen.terminal_gap);item.setPadding(0,gap,0,gap);
             TextView body=text(0,R.dimen.terminal_message_size);body.setTextIsSelectable(true);item.addView(body);
             if(position<messages.size()){MessageDatabase.Row row=messages.get(position);String time=android.text.format.DateFormat.getTimeFormat(MainActivity.this).format(new Date(row.created));body.setText(getString(R.string.message_line,time,getString(row.outgoing?R.string.you:R.string.peer),row.body));body.setTextColor(color(row.outgoing?R.color.terminal_green:R.color.terminal_primary));
+                if(!row.peer.equals(session.historyPeer)){TextView archive=text(R.string.previous_pairing,R.dimen.terminal_status_size);archive.setTextColor(color(R.color.terminal_secondary));item.addView(archive);}
                 if(row.outgoing){TextView delivery=text(0,R.dimen.terminal_status_size);delivery.setText(getString(R.string.status_line,getString(messageState(row.state))));delivery.setTextColor(color(row.state.equals("Failed")?R.color.terminal_error:R.color.terminal_secondary));item.addView(delivery);}
-            }else{MessageDatabase.TransferRow file=files.get(position-messages.size());body.setText(getString(R.string.file_line,file.name,bytes(file.size),getString(fileState(file.state))));body.setTextColor(color(R.color.terminal_amber));}
+            }else{MessageDatabase.TransferRow file=files.get(position-messages.size());body.setText(getString(R.string.file_line,file.name,bytes(file.size),getString(fileState(file.state))));body.setTextColor(color(R.color.terminal_amber));if(!file.peer.equals(session.historyPeer))item.addView(text(R.string.previous_pairing,R.dimen.terminal_status_size));}
             return item;
         }
     }

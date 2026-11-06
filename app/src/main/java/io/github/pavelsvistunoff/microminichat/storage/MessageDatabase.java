@@ -116,32 +116,39 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     public static final class Row {
         public final long rowId, created;
         public final boolean outgoing;
-        public final String body, state;
-        Row(long rowId,long created,boolean outgoing,String body,String state) {
-            this.rowId=rowId;this.created=created;this.outgoing=outgoing;this.body=body;this.state=state;
+        public final String body, state, peer;
+        Row(long rowId,long created,boolean outgoing,String body,String state,String peer) {
+            this.rowId=rowId;this.created=created;this.outgoing=outgoing;this.body=body;this.state=state;this.peer=peer;
         }
     }
     public List<Row> rows(String peer,long before) {
         List<Row> result=new ArrayList<>();
-        try(Cursor c=getReadableDatabase().rawQuery("SELECT rowid,created,direction,body,state FROM messages WHERE peer=? AND rowid<? ORDER BY rowid DESC LIMIT 200",new String[]{peer,Long.toString(before)})) {
-            while(c.moveToNext())result.add(new Row(c.getLong(0),c.getLong(1),c.getInt(2)==0,c.getString(3),c.getString(4)));
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT rowid,created,direction,body,state,peer FROM messages WHERE "+(peer==null?"rowid<?":"peer=? AND rowid<?")+" ORDER BY rowid DESC LIMIT 200",peer==null?new String[]{Long.toString(before)}:new String[]{peer,Long.toString(before)})) {
+            while(c.moveToNext())result.add(new Row(c.getLong(0),c.getLong(1),c.getInt(2)==0,c.getString(3),c.getString(4),c.getString(5)));
         }
         Collections.reverse(result);return Collections.unmodifiableList(result);
     }
     public static final class TransferRow {
-        public final String name,state;
+        public final String name,state,peer;
         public final boolean outgoing;
         public final long size,progress;
-        TransferRow(String name,String state,boolean outgoing,long size,long progress) {
-            this.name=name;this.state=state;this.outgoing=outgoing;this.size=size;this.progress=progress;
+        TransferRow(String name,String state,boolean outgoing,long size,long progress,String peer) {
+            this.name=name;this.state=state;this.outgoing=outgoing;this.size=size;this.progress=progress;this.peer=peer;
         }
     }
     public List<TransferRow> transferRows(String peer) {
         List<TransferRow> result=new ArrayList<>();
-        try(Cursor c=getReadableDatabase().rawQuery("SELECT name,state,direction,size,progress FROM transfers WHERE peer=? ORDER BY rowid DESC LIMIT 50",new String[]{peer})) {
-            while(c.moveToNext())result.add(new TransferRow(c.getString(0),c.getString(1),c.getInt(2)==0,c.getLong(3),c.getLong(4)));
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT name,state,direction,size,progress,peer FROM transfers"+(peer==null?"":" WHERE peer=?")+" ORDER BY rowid DESC LIMIT 50",peer==null?null:new String[]{peer})) {
+            while(c.moveToNext())result.add(new TransferRow(c.getString(0),c.getString(1),c.getInt(2)==0,c.getLong(3),c.getLong(4),c.getString(5)));
         }
         Collections.reverse(result);return Collections.unmodifiableList(result);
+    }
+    public boolean hasRowsBefore(long row) {
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT 1 FROM messages WHERE rowid<? LIMIT 1",new String[]{Long.toString(row)})){return c.moveToFirst();}
+    }
+    public void clearAllHistory() {
+        SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
+        try{db.delete("messages",null,null);db.delete("transfers",null,null);db.setTransactionSuccessful();}finally{db.endTransaction();}
     }
     public void clearHistory(String peer) { getWritableDatabase().delete("messages","peer=?",new String[]{peer});getWritableDatabase().delete("transfers","peer=?",new String[]{peer}); }
     public void clearAll() { SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{for(String table:new String[]{"messages","receipts","meta","transfers"})db.delete(table,null,null);db.setTransactionSuccessful();}finally{db.endTransaction();} }

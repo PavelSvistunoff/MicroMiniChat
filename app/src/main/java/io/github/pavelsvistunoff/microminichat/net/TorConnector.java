@@ -14,7 +14,7 @@ import javax.net.ssl.SSLSocket;
 /** Only loopback is dialed directly. Remote names are canonical onion domains sent through SOCKS. */
 public final class TorConnector implements AutoCloseable {
     public interface Listener {
-        void connected(SSLSocket socket, UUID session, String fingerprint, String onion, boolean outgoing);
+        void connected(SSLSocket socket, UUID session, String fingerprint, String onion, boolean outgoing, long pairingEpoch);
         void failed();
         default void authenticating() { }
     }
@@ -28,6 +28,7 @@ public final class TorConnector implements AutoCloseable {
     private final Set<Socket> pending = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean closed = new AtomicBoolean(), dialing = new AtomicBoolean();
     public volatile String localOnion = "";
+    public volatile long pairingEpoch;
     public volatile String failureCode = "";
     public TorConnector(TlsIdentity identity, TrustStore trust, PairingCapabilities capabilities, Listener listener) throws IOException {
         this.identity = identity; this.trust = trust; this.capabilities = capabilities; this.listener = listener;
@@ -51,6 +52,7 @@ public final class TorConnector implements AutoCloseable {
     }
     private void accept(Socket raw) {
         SSLSocket tls = null;
+        long epoch = pairingEpoch;
         try {
             if (localOnion.isEmpty() || closed.get()) throw new IOException("NOT_READY");
             raw.setSoTimeout(60000);
@@ -75,13 +77,14 @@ public final class TorConnector implements AutoCloseable {
             DataOutputStream out = new DataOutputStream(tls.getOutputStream());
             out.writeInt(0x4d544802); out.write(localOnion.getBytes(StandardCharsets.US_ASCII)); out.flush();
             pending.remove(tls); pending.remove(raw);
-            listener.connected(tls, session, fingerprint, route, false); tls = null;
+            listener.connected(tls, session, fingerprint, route, false, mode == 1 ? epoch : -1); tls = null;
         } catch (Exception e) { failureCode = "INCOMING_" + failure(e); closeSocket(tls == null ? raw : tls); }
         finally { pending.remove(raw); if (tls != null) pending.remove(tls); }
     }
     public void dial(int socksPort, String route, String pin, TorInvite invite) {
         OnionAddress.require(route);
         if (closed.get() || !dialing.compareAndSet(false, true)) return;
+        long epoch = pairingEpoch;
         try { workers.execute(() -> {
             Socket raw = null; SSLSocket tls = null;
             try {
@@ -102,7 +105,7 @@ public final class TorConnector implements AutoCloseable {
                 DataInputStream in = new DataInputStream(tls.getInputStream());
                 if (in.readInt() != 0x4d544802 || !route.equals(readOnion(in)) || closed.get()) throw new IOException("PEER_ROUTE_BINDING");
                 pending.remove(tls); pending.remove(raw);
-                listener.connected(tls, session, fingerprint, route, true); tls = null; raw = null;
+                listener.connected(tls, session, fingerprint, route, true, invite == null ? -1 : epoch); tls = null; raw = null;
             } catch (Exception e) { failureCode = "OUTGOING_" + failure(e); if (!closed.get()) listener.failed(); }
             finally {
                 if (tls != null) { pending.remove(tls); closeSocket(tls); }

@@ -26,7 +26,7 @@ public class TorTransportIntegrationTest {
                 caps[side]=new PairingCapabilities(context,storage);
                 connector[side]=new TorConnector(identity[side],new TrustStore(context,storage),caps[side],new TorConnector.Listener(){
                     @Override public void failed(){failed.set(true);connected.countDown();connected.countDown();}
-                    @Override public void connected(javax.net.ssl.SSLSocket socket,UUID session,String pin,String onion,boolean outgoing){
+                    @Override public void connected(javax.net.ssl.SSLSocket socket,UUID session,String pin,String onion,boolean outgoing,long epoch){
                         sessions[index]=session;
                         links[index]=new FramedLink(socket,new FramedLink.Listener(){
                             @Override public void onReady(){ready.countDown();}

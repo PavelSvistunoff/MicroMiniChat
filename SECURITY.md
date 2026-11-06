@@ -1,126 +1,106 @@
-# Security Model — 0.0.3 Preview (development)
+# Tor-native security model
 
-## Guarantees and limits
+Protect message/file confidentiality and integrity in transit, persistent peer
+continuity, durable delivery/replay semantics and app-private identity material.
+This is an implementation review, not an independent cryptographic/native audit
+or an anonymity guarantee. Physical-device/network acceptance remains deferred.
 
-WebRTC DTLS encrypts/authenticates transport records; the app binds them to a persistent
-peer certificate that the human explicitly verifies. This is not an independent security
-audit or a guarantee against compromised endpoints. Physical-device/network acceptance
-was explicitly deferred; read `docs/VALIDATION.md` before relying on a preview build.
+## Transport and authentication
 
-Protect message/file contents in transit, peer continuity, private keys at rest and
-application retry integrity against network observers, hostile signaling, replay,
-malformed data and hostile peers. Peers/STUN/network operators can observe addresses,
-timing and volume. Rooted/compromised devices, malicious keyboards, screenshots by
-other means, coercion and recipients copying data are outside protection.
+All remote application streams use an explicit SOCKS5 request to the bundled
+Tor's loopback listener. Remote targets must pass canonical v3 address, version
+and SHA3 checksum validation. There is no DNS, system proxy, direct transport or
+external signaling fallback. Tor itself necessarily connects to the Tor network.
 
-## Persistent identity and trust
+Pinned Conscrypt 2.8.0 provides TLS 1.3 only, mutual P-256 certificate proof, fresh
+session keys and ALPN mmc-tor/2. Session tickets are disabled and no early product
+data or TLS downgrade is configured. Outgoing peers pin the invitation/verified
+certificate; known incoming peers pin durable trust. A first incoming self-signed
+certificate must be valid, self-verifying and P-256, but remains only a candidate:
+a live capability and explicit human verification on both ends gate all product
+frames. Self-signature alone grants no messaging permission. Compare both full
+fingerprints independently; an invitation alone cannot authenticate its sender.
 
-Generate an ECDSA WebRTC DTLS certificate with the established native implementation.
-Persist the same certificate/key and use its SHA-256 DER-certificate fingerprint.
-Require independent comparison before first trust; a fingerprint sent only with the
-same untrusted SDP is insufficient. Save explicit trust, block changed fingerprints,
-and bind the confirmation button to the exact fingerprint shown. libwebrtc checks
-SDP fingerprints against the live DTLS certificate. Conflicting/weak fingerprints
-and additional media sections are rejected.
+Legacy AES-GCM-wrapped PEM is read without rewriting it or changing fingerprints;
+original validity remains enforced. New signing keys are nonexportable Android
+Keystore P-256 keys. Hardware backing is not assumed. Conscrypt prehashes the
+handshake transcript and requests raw ECDSA, requiring DIGEST_NONE key permission.
+Private legacy material exists in process memory during use; zeroization of Java
+Strings and protection from a compromised endpoint are not promised.
 
-This follows [RFC 8122](https://www.rfc-editor.org/rfc/rfc8122.html) fingerprint semantics
-and [RFC 8842](https://www.rfc-editor.org/rfc/rfc8842.html) DTLS/SDP behavior. No custom
-cryptographic algorithm/signing handshake or additional content-encryption layer is
-introduced. A fresh session ID is echoed in DTLS-authenticated HELLO frames. Standard
-DTLS protects network replay; durable IDs/hash receipts protect application retries.
+Peer fingerprint and onion route commit atomically after human approval. Changed
+identities/routes are blocked. Legacy trust without a route can create/join a Tor
+invitation and requires explicit route verification. Identity reset is confirmed,
+rotates local TLS/onion material, preserves history and does not silently reset
+remote trust. Earlier history remains visible with an archived-pairing label;
+its partition is never used to authorize the current peer.
 
-The WebRTC API needs PEM rather than a Keystore signing handle. AES-256-GCM wraps
-that material at rest with a nonexportable Android Keystore key and fresh provider nonce.
-No plaintext private key is written to disk. Unwrapped material exists in Java/native
-memory while active; hardware backing of the identity is not claimed. Corrupt/missing
-keys and expired certificates fail closed. Certificates last one year; explicit reset
-changes identity, deletes local metadata/history and requires reverification.
+## Invitations, replay and resource limits
 
-## Input, storage and files
+Invitations carry a 256-bit random capability, public certificate fingerprint,
+canonical onion route, version and ten-minute expiry; no private keys. Only a
+SHA-256 capability hash is persisted. Consumption removes it durably before
+success. Wrong, cancelled, expired and replayed capabilities fail. Both wall-clock
+and monotonic deadlines constrain active invitations; restart cancels pending
+pairing. A lost response after consumption may require a fresh invitation.
+Custom URI handlers/sharing applications are external: importing never connects
+or grants trust; only explicit Connect does. Clipboard export marks sensitive data.
 
-Bound encoded and decoded payloads before allocation; strict UTF-8, lengths, versions,
-roles, session context and sequence validation. No Java object deserialization.
-Random UUIDs use the platform secure generator. Incoming queues and file worker count
-are bounded. Direct mode rejects advertised TURN candidates; explicit TURN configuration allows them. Manual signaling intentionally
-allows ICE checks to supplied network addresses; do not apply untrusted offers casually.
+Pairing epochs and runtime/link identity checks reject late callbacks after cancel,
+replacement and shutdown. Duplicate simultaneous connections deterministically
+select the lower-route initiated stream. Pending message IDs/receipts survive
+arbitration. TLS prevents network authentication replay; durable ID/sequence/hash
+receipts constrain application retries. An authenticated malicious recipient can
+still lie about its own storage or copy received material.
 
-History is app-private SQLite, not separately encrypted against a compromised/unlocked
-OS. Receipt/dedupe state commits before ACK. History deletion keeps minimal hash/ID
-receipts; delete-all rotates identity too. Backups/cloud and device transfers are
-excluded. Flash forensic erasure is not promised. App logs contain no text, SDP,
-addresses, key material or file contents; native tracing/log injection is disabled.
+At most two unauthenticated workers, no waiting worker queue, backlog four,
+60-second TLS/greeting deadline and 120-second SOCKS bound. Stream lengths are
+validated before allocation (65,536-byte body maximum), channel/version/session
+checks are strict, queues are capped at 64 KiB control/128 KiB file plus one frame,
+and coordinator/file input queues at 256 KiB. More than 512 records/second closes
+the stream. Heartbeats/read/write/unverified deadlines close stalled peers. No
+remote data or cryptographic operations run on the Android main thread.
 
-User files use SAF content URIs only, explicit destination creation and sanitized
-metadata. The app never auto-opens received files. Verify size/SHA-256 before marking
-complete; close streams and attempt partial deletion on failure/cancel. Providers can
-block or refuse deletion; report manual cleanup rather than claiming success. After
-process death, metadata marks interruption and the user reselects/restarts from zero.
+## Storage, files and runtime control
 
-## Dependencies and reporting
+SQLite is UID-private, not separately encrypted against an unlocked/compromised OS.
+Receipt/content/sequence commits precede ACK; writes/queueing alone never mean
+Delivered. Failed storage closes the stream. History deletion preserves minimal
+receipts/counters, preventing retransmission from recreating deleted messages.
+Backup/cloud/device transfer are excluded. Flash forensic erasure is not promised.
 
-Runtime WebRTC and build artifacts are checksum-pinned. Publisher notices are retained
-and embedded; JNI names/callbacks are explicitly kept during shrinking. Native source/
-binary reproducibility and a complete independent vulnerability audit are not claimed;
-the rejected alternative bundle and evidence are documented in `docs/WEBRTC_DEPENDENCY.md`.
-No analytics/cloud database. User-approved TURN is explicit opt-in; credentials are
-held only in memory and never logged or exported. TURN operators observe metadata
-but message/file contents remain protected by peer-verified DTLS. See docs/TURN.md. Report security issues privately through a channel
-agreed with the maintainer; no dedicated contact or response-time promise is configured.
+SAF only, explicit source/destination consent, safe filenames/MIME, known size up
+to 16 GiB, bounded chunks, SHA-256 verification and completion ACK. No automatic
+opening/execution. Cancel/failure closes streams and attempts partial deletion;
+providers may block or refuse cleanup, requiring manual action. Interrupted files
+restart from zero with renewed consent. Provider workers have a process-wide cap.
 
+Tor state/onion keys are in private no-backup storage. A missing established onion
+secret fails closed rather than generating a replacement. Tor-managed keys are not
+claimed hardware-backed. The checksum-pinned executable runs in a child process;
+SOCKS/control bind only loopback and control requires its private 32-byte cookie.
+TAKEOWNERSHIP and parent PID constrain orphan lifetime. Output is discarded. Each
+restart creates fresh native globals; JNI is not loaded into the product process.
+The child shares the application UID; this is lifecycle/crash containment, not a
+separate security sandbox. The app logs no text, addresses, invitations, keys or file contents. Diagnostics
+use fixed state/error codes. Sensitive UI screenshots are restricted by FLAG_SECURE.
 
-## Phone-hosted pairing
+The only exported product component is the reviewed Activity; no exported control
+service/provider or boot/push receiver exists. The test document provider is debug
+only and protected by MANAGE_DOCUMENTS; release packaging must exclude it.
 
-A creator may explicitly expose a temporary TCP listener. This adds an inbound attack
-surface and requires public reachability; it does not add a hosted signaling backend.
-Signaling uses standard TLS 1.2/1.3, an ephemeral certificate generated by the established
-WebRTC implementation, exact invitation pinning and a 256-bit access token sent inside
-TLS. Keys/tokens remain in memory. Persistent DTLS peer identity is separate and still
-requires independent human verification. No trust-all or plaintext fallback is used.
+## Supply chain, limitations and reporting
 
-Invitations reveal the creator’s address and grant access to the offer. Anyone who
-obtains one may race the intended peer or consume the single pairing opportunity.
-Custom schemes are not verified App Links. Imported links require an explicit Connect
-action and accept numeric IPs only, avoiding DNS resolution during parsing. Requests
-can target a supplied local/private IP after consent; apply invitations only from a
-trusted person. Frames, worker counts, socket lifetimes and attempts are bounded;
-network loss, cancellation and lifecycle expiry close listeners. Flooding/availability
-and compromised endpoints remain outside guarantees. See docs/PHONE_PAIRING.md.
+Runtime coordinates/hashes are pinned and notices retained. Tor Android .14 is the
+published artifact inspected; newer Tor core .15/.16 announcements and upstream
+native crash reports require ongoing applicability review. Hash pinning is not a
+proof of binary provenance/reproducible builds. See TOR_RUNTIME.md for secure
+updates/source-build qualification. Conscrypt/Bouncy Castle are maintained standard
+implementations; no new crypto primitives or authentication handshake were invented.
 
-
-## Certificate lifetime correction in 0.0.3-preview
-
-Emulator measurement confirmed that the pinned WebRTC native generator consumes
-milliseconds: passing 3600 produced about three seconds of remaining X.509 validity,
-not one hour. The native [generator contract](https://webrtc.googlesource.com/src/+/refs/heads/main/rtc_base/rtc_certificate_generator.h)
-uses milliseconds. New pairing certificates now request one hour and new persistent
-identity certificates request 365 days using explicit TimeUnit conversions; instrumented
-tests check the actual parsed notAfter timestamps. Previous 0.0.1/0.0.2 identity
-generation requested 31,536,000 milliseconds (about 8.76 hours), despite the original
-one-year documentation. Existing saved certificates retain their actual expiry and
-are never silently replaced. After expiry, an explicit identity reset is required;
-it deletes local history/metadata and requires independent peer verification again.
-
-## Tor migration TLS model (supersedes DTLS for the new transport)
-
-The new transport selects pinned Conscrypt 2.8.0 with TLS 1.3 only and ALPN
-`mmc-tor/2`. Mutual certificate authentication proves possession of persistent
-P-256 keys. Session tickets are disabled; no early application data or TLS 1.2
-fallback is enabled. Fresh contexts/session keys and TLS replay protection apply.
-New signing keys are nonexportable Android Keystore keys; hardware backing is not
-assumed. Conscrypt hashes the handshake transcript and requests raw ECDSA signing,
-so DIGEST_NONE authorization is required on the Keystore key.
-
-Existing AES-GCM-wrapped PEM identities are read without rewriting their encrypted
-files; certificates retain their actual validity and fingerprint. Missing/corrupt/
-expired identities fail closed. Explicit identity rotation preserves chat history
-and does not silently change peer trust. TLS peer certificates must be a valid
-self-signed P-256 leaf. Outgoing connections pin the invitation/verified peer;
-returning incoming peers pin persisted trust. A first-time incoming certificate
-is only an authenticated candidate: a live single-use capability and explicit
-human fingerprint verification still gate product data. Self-signature alone does
-not grant peer authorization. Authentication workers, sockets and queues are bounded.
-
-Conscrypt supplies TLS on API 26+ without depending on Android's older platform
-TLS version. API 35 arm64 tests prove mutual pinning, changed-server/client-pin
-rejection, key persistence and unchanged legacy wrapped material. API 26 and other
-ABIs remain unverified until executed. No independent cryptographic audit is claimed.
+Tor guards/network operators can see timing, volume and endpoint connections;
+stable onion/certificate identities are correlatable. Tor may be blocked or slow.
+Global traffic correlation, malicious keyboards/screenshots, rooted OS, coercion,
+recipient copying and endpoint compromise are outside protection. The foreground
+policy is finite and no terminated-app delivery is promised. Report issues privately
+through a channel agreed with the maintainer; no response-time SLA is configured.

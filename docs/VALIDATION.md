@@ -361,3 +361,20 @@ large-font/keyboard ergonomics remain NOT VERIFIED. Android 13+ uses platform
 per-app locales; API 26–32 use a private preference/configuration context. Labels,
 errors, delivery/file states and locale-aware timestamps/size formatting are
 resource-based; wire identifiers and stored state codes remain language-independent.
+
+## Tor M13 — security review and boundary fixes
+
+Reviewed transport bypass/control protection, key/identity persistence, invitations,
+TLS trust, cancellation/arbitration generations, storage/ACK failures, framing,
+queues, files, logging, exported components, backup and dependency provenance.
+SECURITY.md now describes only the Tor-native product and its actual threat model.
+
+31 JVM tests, eight host checks, lint and six API 35 tests PASS: missing established
+onion keys fail closed without regeneration; SQLite write failure creates no receipt;
+old/new trust partitions remain visible; deleting history preserves replay receipts;
+durable capability/trust checks and real Tor messaging regressions pass. Late
+pairing callbacks carry a cancellation epoch, invitations also use monotonic expiry,
+resource cleanup precedes database operations, and stream record rate is bounded.
+Archived pairing labels are localized and do not authorize new peers. Legacy trust
+with no onion route can create an invitation for explicit migration verification.
+This is a focused implementation review, not an independent native/crypto audit.
