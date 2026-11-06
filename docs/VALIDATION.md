@@ -394,3 +394,12 @@ Bouncy Castle certificate fixture preserves exact legacy wrapped identity bytes
 without depending on WebRTC. Duplicate fixture JAR metadata was resolved by excluding
 only the OSGi manifest and merging license notices. Final regression after removing
 the obsolete production dependency is recorded separately below.
+
+## Tor M15 — available hardware and physical checklist
+
+2026-11-06 adb inventory exposes only emulator-5554, sdk_phone64_arm64 /
+Android SDK built for arm64, API 35. No physical phone is connected. All available
+software scenarios have real-Tor emulator coverage; this does not establish
+multi-phone Wi-Fi, carrier/CGNAT, radio handover, OEM sleep or battery behavior.
+The fourteen physical scenarios and measurement template are in PHYSICAL_TEST_PLAN.md.
+Every physical result is NOT VERIFIED; acceptance remains deferred as authorized.

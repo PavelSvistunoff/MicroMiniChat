@@ -344,6 +344,8 @@ Older milestones above describe historical WebRTC previews, not Tor acceptance.
   expiry, missing-key handling, storage failures and archived history boundaries.
 - Tor M14: PASS — Tor-native automated suites, hostile framing/backpressure, durable
   database failures, migration, files, lifecycle and native clean shutdown covered.
-- Tor M15–M17: pending final hardware inventory, optimization and documentation.
+- Tor M15: checklist and hardware inventory complete; no phones available. All
+  physical scenarios NOT VERIFIED; acceptance explicitly deferred.
+- Tor M16–M17: pending optimization and final documentation.
 
 See docs/TOR_BLOCKER.md for the resolved runtime issue and historical evidence. Existing historical milestones and APKs do not satisfy this migration.
