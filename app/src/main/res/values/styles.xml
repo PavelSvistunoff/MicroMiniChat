@@ -1,0 +1,17 @@
+<resources>
+    <style name="Theme.MicroMiniChat.Base" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:windowBackground">@color/terminal_background</item>
+        <item name="android:colorBackground">@color/terminal_background</item>
+        <item name="android:colorAccent">@color/terminal_green</item>
+        <item name="android:textColorPrimary">@color/terminal_primary</item>
+        <item name="android:textColorSecondary">@color/terminal_secondary</item>
+        <item name="android:colorButtonNormal">@color/terminal_surface</item>
+        <item name="android:colorControlNormal">@color/terminal_secondary</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/terminal_background</item>
+        <item name="android:statusBarColor">@color/terminal_background</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+    <style name="Theme.MicroMiniChat" parent="Theme.MicroMiniChat.Base" />
+</resources>

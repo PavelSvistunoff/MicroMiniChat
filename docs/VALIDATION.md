@@ -333,3 +333,19 @@ callbacks are unregistered on shutdown; sockets/workers/native child are closed.
 Foreground service categories/restrictions were reviewed against current Android
 Developers documentation; no indefinite background service or notification is
 claimed. See ANDROID_LIFECYCLE.md. Physical Doze/OEM/battery behavior is NOT VERIFIED.
+
+## Tor M11 — product terminal UI
+
+The product MainActivity/ChatApp now select the Tor-native coordinator. The screen
+uses native Views, centralized terminal colors/dimensions/theme, selectable literal
+log rows, localized-ready timestamps/status resources, a retained multiline draft,
+SAF actions, compact verification/status, Sharesheet and explicit deep-link review.
+IP/STUN/TURN/SDP controls are removed from the product flow. Unused legacy source
+is retained only until M17 cleanup; it is not selected as a fallback.
+
+Debug build, Android lint and three API 35 UI/manifest tests PASS: no extra dangerous
+permissions/backup, primary controls and usable history space, recreation, explicit
+invitation import without connection and preserved draft. Theme API-27 attributes
+use a versioned resource qualifier so API 26 remains build-compatible. No QR/camera
+runtime dependency has been added; private bounded invitation sharing/paste is the
+implemented pairing exchange. Physical-device ergonomics remain NOT VERIFIED.
