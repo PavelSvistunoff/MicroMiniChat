@@ -259,3 +259,12 @@ version/size/encoding/expiration rejection. Two API 35 emulator tests PASS for
 wrong-capability rejection, durable single-use consumption across reopen,
 expiration/cancellation and atomic route trust with identity-replacement blocking.
 Human verification/UI and transport binding are integrated in subsequent milestones.
+
+## Tor M05 — persistent mutual TLS
+
+Two API 35 arm64 TLS tests PASS: mutual TLS 1.3/ALPN, new key continuity across
+reopen, wrong server/client pins rejected, and migration preserves the legacy
+certificate fingerprint and exact encrypted file bytes. The initial Keystore
+signing-policy mismatch was fixed by authorizing DIGEST_NONE for Conscrypt's
+standard prehashed ECDSA operation. Conscrypt 2.8.0 is pinned from its actual
+published AAR with retained license. No TLS downgrade/fallback is configured.

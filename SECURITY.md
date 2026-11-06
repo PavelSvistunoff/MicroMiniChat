@@ -99,3 +99,28 @@ generation requested 31,536,000 milliseconds (about 8.76 hours), despite the ori
 one-year documentation. Existing saved certificates retain their actual expiry and
 are never silently replaced. After expiry, an explicit identity reset is required;
 it deletes local history/metadata and requires independent peer verification again.
+
+## Tor migration TLS model (supersedes DTLS for the new transport)
+
+The new transport selects pinned Conscrypt 2.8.0 with TLS 1.3 only and ALPN
+`mmc-tor/2`. Mutual certificate authentication proves possession of persistent
+P-256 keys. Session tickets are disabled; no early application data or TLS 1.2
+fallback is enabled. Fresh contexts/session keys and TLS replay protection apply.
+New signing keys are nonexportable Android Keystore keys; hardware backing is not
+assumed. Conscrypt hashes the handshake transcript and requests raw ECDSA signing,
+so DIGEST_NONE authorization is required on the Keystore key.
+
+Existing AES-GCM-wrapped PEM identities are read without rewriting their encrypted
+files; certificates retain their actual validity and fingerprint. Missing/corrupt/
+expired identities fail closed. Explicit identity rotation preserves chat history
+and does not silently change peer trust. TLS peer certificates must be a valid
+self-signed P-256 leaf. Outgoing connections pin the invitation/verified peer;
+returning incoming peers pin persisted trust. A first-time incoming certificate
+is only an authenticated candidate: a live single-use capability and explicit
+human fingerprint verification still gate product data. Self-signature alone does
+not grant peer authorization. Authentication workers, sockets and queues are bounded.
+
+Conscrypt supplies TLS on API 26+ without depending on Android's older platform
+TLS version. API 35 arm64 tests prove mutual pinning, changed-server/client-pin
+rejection, key persistence and unchanged legacy wrapped material. API 26 and other
+ABIs remain unverified until executed. No independent cryptographic audit is claimed.

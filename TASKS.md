@@ -324,6 +324,8 @@ Older milestones above describe historical WebRTC previews, not Tor acceptance.
   no-backup keys, strict address checksum and missing-key guard implemented.
 - Tor M04: invitation codec/capability/trust primitives PASS (27 JVM and 2 emulator
   checks); end-to-end pairing UI/transport integration follows M05/M06/M11.
-- Tor M05–M17: pending. No Tor-native messenger acceptance is claimed.
+- Tor M05: PASS — mutual TLS 1.3, persistent Keystore keys and legacy PEM
+  continuity; two API 35 arm64 authentication/migration tests pass.
+- Tor M06–M17: pending. No Tor-native messenger acceptance is claimed.
 
 See docs/TOR_BLOCKER.md for the resolved runtime issue and historical evidence. Existing historical milestones and APKs do not satisfy this migration.
