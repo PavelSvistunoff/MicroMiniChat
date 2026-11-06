@@ -338,6 +338,8 @@ Older milestones above describe historical WebRTC previews, not Tor acceptance.
   disconnect behavior through real Tor; lifecycle tests/JVM/lint pass.
 - Tor M11: PASS — native terminal product UI selects Tor sessions; invitation
   review/draft/recreation/manifest tests and debug/lint pass.
-- Tor M12–M17: pending. No Tor-native messenger acceptance is claimed.
+- Tor M12: PASS — full English/Ukrainian resources, format/plural contracts,
+  platform per-app locales and actual Ukrainian native controls; build/lint pass.
+- Tor M13–M17: pending. No Tor-native messenger acceptance is claimed.
 
 See docs/TOR_BLOCKER.md for the resolved runtime issue and historical evidence. Existing historical milestones and APKs do not satisfy this migration.

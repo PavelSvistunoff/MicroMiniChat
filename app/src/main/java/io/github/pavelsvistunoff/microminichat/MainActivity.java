@@ -32,7 +32,7 @@ public final class MainActivity extends Activity {
     private String pendingImport = "";
     @Override protected void attachBaseContext(Context base) {
         String language = base.getSharedPreferences("ui",0).getString("language","");
-        if (!language.isEmpty()) {
+        if (Build.VERSION.SDK_INT < 33 && !language.isEmpty()) {
             Configuration config = new Configuration(base.getResources().getConfiguration());
             config.setLocale(Locale.forLanguageTag(language)); base = base.createConfigurationContext(config);
         }
@@ -124,6 +124,7 @@ public final class MainActivity extends Activity {
         int error=problem();notice.setText(session.cleanupRequired?R.string.cleanup_required:error!=0?error:!session.invitation.isEmpty()?R.string.invitation_ready:R.string.foreground_notice);
         notice.setTextColor(color(session.cleanupRequired||error!=0?R.color.terminal_error:R.color.terminal_secondary));
         adapter.refresh();
+        findViewById(R.id.messages).setContentDescription(getResources().getQuantityString(R.plurals.message_count,session.history.size(),session.history.size()));
     }
     private void showMenu(View anchor){
         PopupMenu popup=new PopupMenu(this,anchor,Gravity.END);
@@ -142,7 +143,8 @@ public final class MainActivity extends Activity {
     }
     private void confirm(int title,int question,Runnable action){new AlertDialog.Builder(this).setTitle(title).setMessage(question).setNegativeButton(R.string.cancel,null).setPositiveButton(R.string.confirm,(dialog,which)->action.run()).show();}
     private void language(){String[] codes={"","en","uk"};String[] labels={getString(R.string.system_language),getString(R.string.language_en),getString(R.string.language_uk)};
-        new AlertDialog.Builder(this).setTitle(R.string.language).setItems(labels,(dialog,index)->{getSharedPreferences("ui",0).edit().putString("language",codes[index]).apply();recreate();}).show();}
+        new AlertDialog.Builder(this).setTitle(R.string.language).setItems(labels,(dialog,index)->{if(Build.VERSION.SDK_INT>=33){getSharedPreferences("ui",0).edit().remove("language").apply();getSystemService(android.app.LocaleManager.class).setApplicationLocales(LocaleList.forLanguageTags(codes[index]));}
+            else{getSharedPreferences("ui",0).edit().putString("language",codes[index]).apply();recreate();}}).show();}
     private void licenses(){new Thread(()->{
         try{StringBuilder content=new StringBuilder();for(String file:new String[]{"LICENSE","TOR_LICENSE.txt","BOUNCY_CASTLE_LICENSE.html","CONSCRYPT_LICENSE.txt"}){
             try(java.io.InputStream in=getAssets().open(file);java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream()){

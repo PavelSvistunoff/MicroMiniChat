@@ -349,3 +349,15 @@ invitation import without connection and preserved draft. Theme API-27 attribute
 use a versioned resource qualifier so API 26 remains build-compatible. No QR/camera
 runtime dependency has been added; private bounded invitation sharing/paste is the
 implemented pairing exchange. Physical-device ergonomics remain NOT VERIFIED.
+
+## Tor M12 — Ukrainian and English
+
+Debug build, lint, eight Python host contracts and LocalizationTest PASS. Every
+translatable English UI string has a Ukrainian resource with matching format
+arguments; Ukrainian one/few/many/other plurals are checked. API 35 native controls
+render Ukrainian, bootstrap formatting retains percentages, and English remains
+fallback. Resource configuration is exercised with 1.5 font scale; physical
+large-font/keyboard ergonomics remain NOT VERIFIED. Android 13+ uses platform
+per-app locales; API 26–32 use a private preference/configuration context. Labels,
+errors, delivery/file states and locale-aware timestamps/size formatting are
+resource-based; wire identifiers and stored state codes remain language-independent.
