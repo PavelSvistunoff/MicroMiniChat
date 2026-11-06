@@ -11,17 +11,23 @@ import java.util.*;
 /** SQLite transactions define receipt, dedupe and ordered per-peer conversation state. */
 public final class MessageDatabase extends SQLiteOpenHelper {
     public MessageDatabase(Context context) { this(context,"history.db"); }
-    public MessageDatabase(Context context,String name) { super(context,name,null,1); setWriteAheadLoggingEnabled(true); }
+    public MessageDatabase(Context context,String name) { super(context,name,null,2); setWriteAheadLoggingEnabled(true); }
     @Override public void onConfigure(SQLiteDatabase db) { db.execSQL("PRAGMA synchronous=FULL"); }
     @Override public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE meta (key TEXT PRIMARY KEY, value INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE messages (rowid INTEGER PRIMARY KEY AUTOINCREMENT, peer TEXT NOT NULL, id TEXT NOT NULL, direction INTEGER NOT NULL, seq INTEGER NOT NULL, body TEXT NOT NULL, state TEXT NOT NULL, created INTEGER NOT NULL, UNIQUE(peer,id,direction), UNIQUE(peer,direction,seq))");
         db.execSQL("CREATE TABLE receipts (peer TEXT NOT NULL, id TEXT NOT NULL, seq INTEGER NOT NULL, hash BLOB NOT NULL, PRIMARY KEY(peer,id), UNIQUE(peer,seq))");
-        db.execSQL("CREATE TABLE transfers (id TEXT PRIMARY KEY, peer TEXT NOT NULL, name TEXT NOT NULL, direction INTEGER NOT NULL, size INTEGER NOT NULL, progress INTEGER NOT NULL, state TEXT NOT NULL, uri TEXT NOT NULL, hash TEXT NOT NULL)");
+        db.execSQL("CREATE TABLE transfers (id TEXT PRIMARY KEY, peer TEXT NOT NULL, name TEXT NOT NULL, direction INTEGER NOT NULL, size INTEGER NOT NULL, progress INTEGER NOT NULL, state TEXT NOT NULL, uri TEXT NOT NULL, hash TEXT NOT NULL, created INTEGER NOT NULL DEFAULT 0)");
     }
-    @Override public void onUpgrade(SQLiteDatabase db,int old,int next) { throw new IllegalStateException("UNSUPPORTED_SCHEMA"); }
+    @Override public void onUpgrade(SQLiteDatabase db,int old,int next) {
+        if (old == 1 && next == 2) {
+            db.execSQL("ALTER TABLE transfers ADD COLUMN created INTEGER NOT NULL DEFAULT 0");
+            return;
+        }
+        throw new IllegalStateException("UNSUPPORTED_SCHEMA");
+    }
     public void recover() {
-        getWritableDatabase().execSQL("UPDATE messages SET state='Failed' WHERE state='Sending'");
+        getWritableDatabase().execSQL("UPDATE messages SET state='Failed' WHERE state IN ('Sending','Sent')");
         getWritableDatabase().execSQL("UPDATE transfers SET state='Interrupted — select and restart' WHERE state NOT LIKE 'Complete%' AND state NOT LIKE 'Cancelled%' AND state NOT LIKE 'Failed%'");
     }
     private long counter(SQLiteDatabase db,String key) {
@@ -51,7 +57,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             } catch(RuntimeException e) { throw new IOException("MESSAGE_READ_FAILED"); }
         }
         @Override public void state(UUID id,String state) throws IOException {
-            if(!Arrays.asList(ReliableProtocol.PENDING,ReliableProtocol.SENDING,ReliableProtocol.DELIVERED,ReliableProtocol.FAILED).contains(state))throw new IOException("INVALID_STATE");
+            if(!Arrays.asList(ReliableProtocol.PENDING,ReliableProtocol.SENDING,ReliableProtocol.SENT,ReliableProtocol.DELIVERED,ReliableProtocol.FAILED).contains(state))throw new IOException("INVALID_STATE");
             try {
                 ContentValues values=new ContentValues();values.put("state",state);
                 getWritableDatabase().update("messages",values,"peer=? AND id=? AND direction=0 AND state!='Delivered'",new String[]{peer,id.toString()});
@@ -96,7 +102,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         Collections.reverse(rows);return Collections.unmodifiableList(rows);
     }
     public void interrupt(String peer) {
-        getWritableDatabase().execSQL("UPDATE messages SET state='Failed' WHERE peer=? AND state='Sending'",new Object[]{peer});
+        getWritableDatabase().execSQL("UPDATE messages SET state='Failed' WHERE peer=? AND state IN ('Sending','Sent')",new Object[]{peer});
         getWritableDatabase().execSQL("UPDATE transfers SET state='Interrupted — restart required' WHERE peer=? AND state NOT LIKE 'Complete%' AND state NOT LIKE 'Cancelled%' AND state NOT LIKE 'Failed%'",new Object[]{peer});
     }
     public static final class Page {
@@ -113,11 +119,54 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         }
         Collections.reverse(rows);return new Page(Collections.unmodifiableList(rows),oldest,more);
     }
+    public static final class Row {
+        public final long rowId, created;
+        public final boolean outgoing;
+        public final String body, state, peer;
+        Row(long rowId,long created,boolean outgoing,String body,String state,String peer) {
+            this.rowId=rowId;this.created=created;this.outgoing=outgoing;this.body=body;this.state=state;this.peer=peer;
+        }
+    }
+    public List<Row> rows(String peer,long before) {
+        List<Row> result=new ArrayList<>();
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT rowid,created,direction,body,state,peer FROM messages WHERE "+(peer==null?"rowid<?":"peer=? AND rowid<?")+" ORDER BY rowid DESC LIMIT 200",peer==null?new String[]{Long.toString(before)}:new String[]{peer,Long.toString(before)})) {
+            while(c.moveToNext())result.add(new Row(c.getLong(0),c.getLong(1),c.getInt(2)==0,c.getString(3),c.getString(4),c.getString(5)));
+        }
+        Collections.reverse(result);return Collections.unmodifiableList(result);
+    }
+    public static final class TransferRow {
+        public final String name,state,peer;
+        public final boolean outgoing;
+        public final long size,progress,created;
+        TransferRow(String name,String state,boolean outgoing,long size,long progress,String peer,long created) {
+            this.name=name;this.state=state;this.outgoing=outgoing;this.size=size;this.progress=progress;this.peer=peer;this.created=created;
+        }
+    }
+    public List<TransferRow> transferRows(String peer) {
+        List<TransferRow> result=new ArrayList<>();
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT name,state,direction,size,progress,peer,created FROM transfers"+(peer==null?"":" WHERE peer=?")+" ORDER BY rowid DESC LIMIT 50",peer==null?null:new String[]{peer})) {
+            while(c.moveToNext())result.add(new TransferRow(c.getString(0),c.getString(1),c.getInt(2)==0,c.getLong(3),c.getLong(4),c.getString(5),c.getLong(6)));
+        }
+        Collections.reverse(result);return Collections.unmodifiableList(result);
+    }
+    public boolean hasRowsBefore(long row) {
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT 1 FROM messages WHERE rowid<? LIMIT 1",new String[]{Long.toString(row)})){return c.moveToFirst();}
+    }
+    public void clearAllHistory() {
+        SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
+        try{db.delete("messages",null,null);db.delete("transfers",null,null);db.setTransactionSuccessful();}finally{db.endTransaction();}
+    }
     public void clearHistory(String peer) { getWritableDatabase().delete("messages","peer=?",new String[]{peer});getWritableDatabase().delete("transfers","peer=?",new String[]{peer}); }
     public void clearAll() { SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{for(String table:new String[]{"messages","receipts","meta","transfers"})db.delete(table,null,null);db.setTransactionSuccessful();}finally{db.endTransaction();} }
     public void transfer(UUID id,String peer,String name,boolean outgoing,long size,long progress,String state,String uri,String hash) {
         ContentValues row=new ContentValues();row.put("id",id.toString());row.put("peer",peer);row.put("name",name);row.put("direction",outgoing?0:1);row.put("size",size);row.put("progress",progress);row.put("state",state);row.put("uri",uri);row.put("hash",hash);
-        getWritableDatabase().insertWithOnConflict("transfers",null,row,SQLiteDatabase.CONFLICT_REPLACE);
+        SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
+        try {
+            if(db.update("transfers",row,"id=?",new String[]{id.toString()})==0) {
+                row.put("created",System.currentTimeMillis());db.insertOrThrow("transfers",null,row);
+            }
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
     }
     public List<String> transfers(String peer) {
         List<String> rows=new ArrayList<>();

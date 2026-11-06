@@ -20,6 +20,14 @@ public final class TrustStore {
             throw new IOException("IDENTITY_CHANGE_BLOCKED");
         if (!preferences.edit().putString("fingerprint",fingerprint).commit()) throw new IOException("TRUST_WRITE_FAILED");
     }
+    public synchronized String route() { return preferences.getString("onion", ""); }
+    public synchronized void verifyRoute(String fingerprint, String onion) throws IOException {
+        io.github.pavelsvistunoff.microminichat.tor.OnionAddress.require(onion);
+        if (fingerprint == null || !fingerprint.matches("(?:[0-9A-F]{2}:){31}[0-9A-F]{2}") || match(fingerprint) == Match.CHANGED)
+            throw new IOException("IDENTITY_CHANGE_BLOCKED");
+        if (!preferences.edit().putString("fingerprint", fingerprint).putString("onion", onion).commit())
+            throw new IOException("TRUST_WRITE_FAILED");
+    }
     public synchronized void clear() throws IOException {
         if (!preferences.edit().clear().commit()) throw new IOException("TRUST_DELETE_FAILED");
     }

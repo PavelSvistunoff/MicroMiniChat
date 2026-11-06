@@ -1,0 +1,29 @@
+{
+  "both_bootstrap_ms": 5248,
+  "both_published_ms": 7860,
+  "join_to_verified_ms": 5500,
+  "start_to_authenticated_ms": 13360,
+  "connected_idle": {
+    "app_pss_kib": 67879,
+    "tor_children_pss_kib": 52059
+  },
+  "active_transfer": {
+    "app_pss_kib": 68336,
+    "tor_children_pss_kib": 52039
+  },
+  "file_bytes": 2097152,
+  "file_ms": 107951,
+  "file_bytes_per_second": 19426,
+  "concurrent_text_delivered": true,
+  "environment": "API35 arm64 emulator, two clients in one app UID, real Tor",
+  "build_variant": "debug",
+  "sampling": "Single warm instrumentation process, two isolated clients; PSS samples after five connected-idle seconds and during transfer. Not a physical-phone or battery measurement.",
+  "idle_battery": "NOT VERIFIED",
+  "release_cold_process_start_total_time_ms": [
+    110,
+    98,
+    98
+  ],
+  "cold_start_method": "Three am start -W TotalTime samples, force-stop between launches; signed minified release; existing synthetic identity/history; Tor starts asynchronously. Not time to network readiness.",
+  "measurement_stage": "Tor-only M16 debug instrumentation before the final Join-dialog keyboard correction; not a final minified-release network benchmark."
+}

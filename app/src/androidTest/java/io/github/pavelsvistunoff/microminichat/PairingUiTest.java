@@ -1,97 +1,71 @@
 package io.github.pavelsvistunoff.microminichat;
-
-import android.app.Instrumentation;
+import android.app.*;
 import android.content.Intent;
-import android.view.View;
 import android.widget.EditText;
-import android.widget.TextView;
 import androidx.test.platform.app.InstrumentationRegistry;
-import io.github.pavelsvistunoff.microminichat.signal.Signal;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import io.github.pavelsvistunoff.microminichat.pairing.TorInvite;
 import org.junit.Test;
 import static org.junit.Assert.*;
-
-/** Guided pairing interactions on emulator; no internet connectivity claim. */
-public final class PairingUiTest {
-    private final Instrumentation instrumentation=InstrumentationRegistry.getInstrumentation();
-    private ChatSession session() { return ((ChatApp)instrumentation.getTargetContext().getApplicationContext()).session(); }
-    private MainActivity launch(Intent intent) throws Exception {
-        MainActivity activity=(MainActivity)instrumentation.startActivitySync(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-        session().disconnect();drain();
-        return activity;
-    }
-    private Intent intent() { return new Intent(instrumentation.getTargetContext(),MainActivity.class); }
-    private void drain() throws Exception {
-        CountDownLatch latch=new CountDownLatch(1);session().worker.post(latch::countDown);
-        assertTrue(latch.await(5,TimeUnit.SECONDS));instrumentation.waitForIdleSync();
-    }
-    private void close(MainActivity activity) throws Exception {
-        session().disconnect();drain();
-        instrumentation.runOnMainSync(()->{ if(activity.pairing!=null)activity.pairing.dismiss();activity.finish(); });
-    }
-    @Test public void joinShowsInputAndConnectionSettingsAreCollapsed() throws Exception {
-        MainActivity activity=launch(intent());
+public class PairingUiTest {
+    @Test public void invitationImportRequiresExplicitConnectAndDraftSurvivesRecreation() throws Exception {
+        Instrumentation instrumentation=InstrumentationRegistry.getInstrumentation();
+        String invitation=TorInvite.create("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaam2dqd.onion","AB:".repeat(31)+"AB",System.currentTimeMillis()).encode();
+        MainActivity activity=(MainActivity)instrumentation.startActivitySync(new Intent(instrumentation.getTargetContext(),MainActivity.class).setAction(Intent.ACTION_VIEW).setData(android.net.Uri.parse(invitation)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        instrumentation.waitForIdleSync();
+        ChatSession session=((ChatApp)activity.getApplication()).session();
         try {
             instrumentation.runOnMainSync(()->{
-                activity.pair();
-                assertEquals(View.GONE,activity.pairing.findViewById(R.id.pair_network).getVisibility());
-                assertFalse(activity.pairing.findViewById(R.id.pair_input).isShown());
-                assertFalse(activity.pairing.findViewById(R.id.pair_share).isShown());
-                assertFalse(activity.pairing.findViewById(R.id.pair_verify).isShown());
-                activity.pairing.findViewById(R.id.pair_join).performClick();
-                assertTrue(activity.pairing.findViewById(R.id.pair_input).isShown());
-                assertFalse(activity.pairing.findViewById(R.id.pair_start).isShown());
-                activity.pairing.findViewById(R.id.pair_settings).performClick();
-                assertEquals(View.VISIBLE,activity.pairing.findViewById(R.id.pair_network).getVisibility());
+                assertNotNull(activity.pairing);assertEquals(invitation,((EditText)activity.pairing.findViewById(R.id.pair_input)).getText().toString());
+                assertFalse(session.ready);assertTrue(session.remoteFingerprint.isEmpty());
+                activity.pairing.dismiss();((EditText)activity.findViewById(R.id.chat_input)).setText("draft survives recreation");
             });
-        } finally { close(activity); }
+            Instrumentation.ActivityMonitor monitor=new Instrumentation.ActivityMonitor(MainActivity.class.getName(),null,false);instrumentation.addMonitor(monitor);
+            try {
+                instrumentation.runOnMainSync(activity::recreate);Activity recreated=monitor.waitForActivityWithTimeout(5000);assertNotNull(recreated);
+                instrumentation.runOnMainSync(()->{
+                    assertEquals("draft survives recreation",((EditText)recreated.findViewById(R.id.chat_input)).getText().toString());
+                    assertFalse(recreated.findViewById(R.id.send).isEnabled());recreated.finish();
+                });
+            } finally {instrumentation.removeMonitor(monitor);}
+        } finally {instrumentation.runOnMainSync(activity::finish);session.disconnect();}
     }
-    @Test public void sharesheetPrefillsInvitationWithoutStartingNetworkOrTrust() throws Exception {
-        String sdp="v=0\r\na=fingerprint:sha-256 "+"AB:".repeat(31)+"AB\r\n"
-                +"m=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\n";
-        String payload=new Signal(true,UUID.randomUUID(),sdp).encode();
-        MainActivity activity=launch(intent().setAction(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,payload));
+    @Test public void longInvitationConnectsByTouchWithKeyboardVisible() throws Exception {
+        org.junit.Assume.assumeTrue(android.os.Build.VERSION.SDK_INT>=30);
+        Instrumentation instrumentation=InstrumentationRegistry.getInstrumentation();
+        String invitation=TorInvite.create("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaam2dqd.onion","AB:".repeat(31)+"AB",System.currentTimeMillis()).encode();
+        MainActivity activity=(MainActivity)instrumentation.startActivitySync(new Intent(instrumentation.getTargetContext(),MainActivity.class).setAction(Intent.ACTION_VIEW).setData(android.net.Uri.parse(invitation)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        ChatSession session=((ChatApp)activity.getApplication()).session();
         try {
-            instrumentation.runOnMainSync(()->{
-                assertNotNull(activity.pairing);
-                EditText input=activity.pairing.findViewById(R.id.pair_input);
-                assertEquals(payload,input.getText().toString());
-                assertTrue(input.isShown());
-                assertFalse(session().open);assertFalse(session().verified);assertTrue(session().localSignal.isEmpty());
-                assertFalse(activity.findViewById(R.id.send).isEnabled());
-            });
-        } finally { close(activity); }
-    }
-    @Test public void phoneLinkOpensForReviewWithoutConnecting() throws Exception {
-        String value=new io.github.pavelsvistunoff.microminichat.pairing.PhoneInvite("127.0.0.1",9,"ab".repeat(32),new byte[32]).encode();
-        Intent view=intent().setAction(Intent.ACTION_VIEW).setData(android.net.Uri.parse(value));
-        MainActivity activity=launch(view);
-        try {
-            instrumentation.runOnMainSync(()->{
-                assertNotNull(activity.pairing);
-                assertEquals(value,((EditText)activity.pairing.findViewById(R.id.pair_input)).getText().toString());
-                assertTrue(activity.pairing.findViewById(R.id.pair_connect).isShown());
-                assertFalse(session().phonePairingActive);assertFalse(session().open);
-                Intent implicit=new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(value)).setPackage(activity.getPackageName());
-                assertNotNull(activity.getPackageManager().resolveActivity(implicit,0));
-            });
-        } finally { close(activity); }
-    }
-    @Test public void startProducesShareInvitationWithoutShowingRawPayload() throws Exception {
-        MainActivity activity=launch(intent());
-        try {
-            instrumentation.runOnMainSync(()->{activity.pair();((android.widget.CheckBox)activity.pairing.findViewById(R.id.pair_on_phone)).setChecked(false);activity.pairing.findViewById(R.id.pair_start).performClick();});
-            SessionTest.waitFor(()->!session().localSignal.isEmpty());
             instrumentation.waitForIdleSync();
             instrumentation.runOnMainSync(()->{
-                TextView share=activity.pairing.findViewById(R.id.pair_share);
-                assertTrue(share.isShown());assertEquals("Share invitation",share.getText().toString());
-                assertTrue(activity.pairing.findViewById(R.id.pair_input).isShown());
-                assertTrue(((EditText)activity.pairing.findViewById(R.id.pair_input)).getText().toString().isEmpty());
-                assertFalse(activity.pairing.findViewById(R.id.pair_verify).isShown());
+                EditText field=activity.pairing.findViewById(R.id.pair_input);field.requestFocus();
+                ((android.view.inputmethod.InputMethodManager)activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)).showSoftInput(field,android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
             });
-        } finally { close(activity); }
+            java.util.concurrent.atomic.AtomicBoolean keyboard=new java.util.concurrent.atomic.AtomicBoolean();
+            long deadline=android.os.SystemClock.elapsedRealtime()+8000;
+            while(!keyboard.get()&&android.os.SystemClock.elapsedRealtime()<deadline) {
+                instrumentation.runOnMainSync(()->{
+                    android.view.WindowInsets insets=activity.pairing.getWindow().getDecorView().getRootWindowInsets();
+                    keyboard.set(insets!=null&&insets.isVisible(android.view.WindowInsets.Type.ime()));
+                });
+                Thread.sleep(50);
+            }
+            assertTrue("Real keyboard must be visible",keyboard.get());
+            int[] center=new int[2];
+            instrumentation.runOnMainSync(()->{
+                android.widget.Button connect=activity.pairing.getButton(android.content.DialogInterface.BUTTON_POSITIVE);
+                int[] location=new int[2];connect.getLocationOnScreen(location);
+                android.graphics.Rect visible=new android.graphics.Rect();connect.getWindowVisibleDisplayFrame(visible);
+                center[0]=location[0]+connect.getWidth()/2;center[1]=location[1]+connect.getHeight()/2;
+                assertTrue("Connect must remain above the IME",center[1]<visible.bottom);
+            });
+            long now=android.os.SystemClock.uptimeMillis();
+            android.view.MotionEvent down=android.view.MotionEvent.obtain(now,now,android.view.MotionEvent.ACTION_DOWN,center[0],center[1],0);
+            android.view.MotionEvent up=android.view.MotionEvent.obtain(now,now+50,android.view.MotionEvent.ACTION_UP,center[0],center[1],0);
+            try { instrumentation.sendPointerSync(down);instrumentation.sendPointerSync(up); }
+            finally { down.recycle();up.recycle(); }
+            instrumentation.waitForIdleSync();
+            instrumentation.runOnMainSync(()->{assertFalse("Touch Connect must dismiss the reviewed invitation",activity.pairing.isShowing());assertFalse(session.ready);});
+        } finally { instrumentation.runOnMainSync(activity::finish);session.disconnect(); }
     }
 }

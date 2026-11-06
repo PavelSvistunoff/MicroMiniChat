@@ -64,14 +64,13 @@ Do not implement:
 - Cloud message storage.
 - Push notification services.
 - Google Firebase.
-- WebRTC.
-- ICE, STUN, TURN or SDP.
+- Any Internet transport other than bundled Tor.
 - ngrok.
 - Supabase.
-- Cloudflare signaling or relay services.
+- Application-specific hosted routing services.
 - A self-hosted backend.
-- Manual port forwarding.
-- Manual IP address configuration.
+- Manual network exposure.
+- Manual network configuration.
 - Dependence on Orbot or another installed application.
 
 Do not introduce any excluded functionality as an implementation shortcut.
@@ -91,9 +90,9 @@ Do not introduce any excluded functionality as an implementation shortcut.
 
 # 3. Mandatory Architecture Migration
 
-The existing WebRTC-based implementation is obsolete.
+Tor is the sole supported network architecture.
 
-Replace the network architecture completely rather than maintaining WebRTC as a fallback.
+Use the Tor architecture throughout, without an alternate transport fallback.
 
 Inspect the current implementation before modifying it.
 
@@ -108,11 +107,11 @@ Preserve useful, transport-independent components wherever possible, including:
 - Local history.
 - Android Storage Access Framework integration.
 
-Rewrite components tightly coupled to WebRTC or DTLS identity.
+Keep transport components compatible with persistent mutual TLS identity.
 
-Remove obsolete signaling, SDP, ICE, STUN, TURN, and phone-hosted pairing code after their replacements are functional.
+Retain only the current Tor transport and invitation implementation.
 
-Remove the WebRTC runtime dependency and obsolete probe module when no longer needed.
+Remove unused runtime dependencies and obsolete testing modules.
 
 # 4. Target Network Architecture
 
@@ -138,7 +137,7 @@ Android UI
 → Tor Onion Network
 → Remote Device
 
-No separate signaling service is required.
+No separate application backend is required.
 
 Both peers may initiate a connection. Implement deterministic connection arbitration to prevent duplicate simultaneous sessions.
 
@@ -148,7 +147,7 @@ Before implementation:
 
 1. Inspect the entire repository.
 2. Read README.md, SPEC.md, ARCHITECTURE.md, PROTOCOL.md, SECURITY.md, TASKS.md and AGENTS.md.
-3. Identify all WebRTC dependencies and assumptions.
+3. Identify transport dependencies and architectural assumptions.
 4. Identify reusable protocol and persistence components.
 5. Identify identity and trust migration risks.
 6. Identify Android lifecycle constraints.
@@ -224,9 +223,7 @@ Do not expose the full address unnecessarily in the normal chat UI.
 
 # 8. Milestone M04 — Pairing and Invitations
 
-Replace the existing phone-hosted pairing protocol.
-
-Implement a versioned Tor invitation protocol.
+Implement the versioned Tor invitation protocol.
 
 An invitation must include:
 
@@ -267,7 +264,7 @@ Use Android App Links or a suitable custom URI scheme without introducing a host
 
 # 9. Milestone M05 — Authentication and Encryption
 
-Replace the current DTLS-dependent identity mechanism.
+Use persistent application identities with mutual authentication.
 
 Implement mutual authentication and application-layer encryption using a well-established protocol and maintained cryptographic implementation.
 
@@ -295,11 +292,11 @@ Requirements:
 
 Preserve existing verified peer identity data when safe and technically possible.
 
-If old DTLS identity material cannot be migrated securely, require explicit re-verification. Do not silently replace trust records or delete chat history.
+If legacy identity material cannot be migrated securely, require explicit re-verification. Do not silently replace trust records or delete chat history.
 
 # 10. Milestone M06 — TCP Transport and Framing
 
-Replace WebRTC DataChannels with an asynchronous framed TCP transport over Tor.
+Use an asynchronous framed TCP transport over Tor.
 
 Requirements:
 
@@ -316,9 +313,7 @@ Requirements:
 - No blocking network operations on the Android main thread.
 - Safe handling of malformed and hostile input.
 
-The previous implementation used separate control and file DataChannels.
-
-Replace this with either:
+Carry control and file traffic using either:
 
 - Explicit multiplexing over one TCP connection, or
 - Separate authenticated Tor TCP streams with documented lifecycle rules.
@@ -584,7 +579,7 @@ Include only genuinely useful options, such as:
 - Identity reset with confirmation.
 - Local history management.
 
-Do not expose SOCKS, ports, Tor configuration, STUN, TURN or SDP.
+Do not expose SOCKS, ports or low-level Tor configuration.
 
 ## 15.7 UI implementation
 
@@ -737,7 +732,7 @@ Measure:
 
 Optimize without weakening security.
 
-Remove unused dependencies, resources and obsolete WebRTC code.
+Remove unused dependencies, resources and code.
 
 Keep release builds minified and resource-shrunk where safe.
 
@@ -765,7 +760,7 @@ Create:
 - docs/ANDROID_LIFECYCLE.md
 - docs/PHYSICAL_TEST_PLAN.md
 
-Remove outdated instructions referring to WebRTC, STUN, TURN, SDP, public-IP pairing and port forwarding as supported runtime functionality.
+Remove outdated transport and network-setup instructions; document only the supported Tor runtime.
 
 Update AGENTS.md to explicitly record that the user approved the complete Tor migration and terminal UI redesign.
 
@@ -807,15 +802,15 @@ The implementation is complete when:
 - Embedded Tor starts without Orbot.
 - Each installation has a persistent v3 Onion Service.
 - Two phones can pair using a shared invitation.
-- Pairing requires no public IP, port forwarding or network settings.
+- Pairing requires no manual network configuration.
 - Both peers authenticate successfully.
 - Encrypted text messaging works.
 - Encrypted file transfers work.
 - Delivery acknowledgments are correct.
 - Message history survives restarts.
 - Verified peers reconnect without repeating pairing.
-- No WebRTC runtime dependency remains.
-- No external signaling or TURN infrastructure is required.
+- Only the approved transport dependencies remain.
+- No application-specific external routing infrastructure is required.
 - The Android interface uses the terminal design.
 - Ukrainian and English localization work.
 - Automated tests pass.

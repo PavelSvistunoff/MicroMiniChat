@@ -1,0 +1,9 @@
+<resources>
+    <color name="terminal_background">#0D1117</color>
+    <color name="terminal_surface">#161B22</color>
+    <color name="terminal_primary">#E6EDF3</color>
+    <color name="terminal_secondary">#8B949E</color>
+    <color name="terminal_green">#7CFC8A</color>
+    <color name="terminal_amber">#E3B96B</color>
+    <color name="terminal_error">#F85149</color>
+</resources>

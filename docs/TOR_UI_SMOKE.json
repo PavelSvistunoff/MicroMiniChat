@@ -1,0 +1,30 @@
+{
+  "version": "0.1.0-tor-preview",
+  "build_variant": "release",
+  "environment": "Two foreground Android emulators, separate installations, real Tor",
+  "physical_hardware": false,
+  "both_apps_foreground": true,
+  "background_policy_modified": false,
+  "sharesheet_and_explicit_import": true,
+  "private_invitation_not_logged": true,
+  "mutual_full_fingerprint_comparison": true,
+  "bilateral_verification": true,
+  "durable_text_ack": true,
+  "history_survives_force_stop": true,
+  "verified_automatic_reconnect": true,
+  "bundled_license_screen_opens": true,
+  "devices": [
+    {
+      "api": 35,
+      "abi": "arm64-v8a",
+      "model": "Android SDK built for arm64",
+      "apk_sha256": "40704d9f6890d5b0cd1b02884575017f353f562be2e848d696116ea164dd2dfa"
+    },
+    {
+      "api": 35,
+      "abi": "arm64-v8a",
+      "model": "Android SDK built for arm64",
+      "apk_sha256": "40704d9f6890d5b0cd1b02884575017f353f562be2e848d696116ea164dd2dfa"
+    }
+  ]
+}

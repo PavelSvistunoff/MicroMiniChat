@@ -16,7 +16,7 @@ class FoundationContractTest(unittest.TestCase):
     def setUp(self):
         self.manifest = ET.parse(ROOT / 'app/src/main/AndroidManifest.xml').getroot()
 
-    def test_minimum_network_permissions_and_no_background_components(self):
+    def test_minimum_permissions_and_private_embedded_tor_service(self):
         self.assertEqual({'android.permission.INTERNET', 'android.permission.ACCESS_NETWORK_STATE'},
                          {p.get(ANDROID + 'name') for p in self.manifest.findall('uses-permission')})
         application = self.manifest.find('application')
