@@ -3,11 +3,11 @@
 ## Scope and Workflow
 
 The user explicitly approved the complete Tor migration and terminal UI redesign
-in `TOR_MIGRATION_SPEC.md`, which supersedes the older WebRTC product boundaries.
+in `TOR_MIGRATION_SPEC.md`, which defines the approved product architecture.
 Implement on the dedicated feature branch, commit each validated milestone, and do
 not publish APKs/create releases as part of this migration without authorization.
-The Tor replacement is the only product runtime; no
-new WebRTC fallback, TURN, signaling backend or manual network setup is permitted.
+Tor is the only product runtime. No alternate Internet transport, application
+backend or manual network setup is permitted.
 Preserve local history and require explicit peer re-verification where necessary.
 
 Physical-device acceptance was explicitly deferred; never report unexecuted

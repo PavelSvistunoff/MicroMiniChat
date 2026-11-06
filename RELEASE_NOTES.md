@@ -3,8 +3,8 @@
 Complete Tor-only Android migration: bundled persistent v3 onion services, mutual
 TLS1.3, single-use private invitations, bilateral identity verification, automatic
 verified-peer reconnect, durable text ACK/deduplication and consented SAF file streaming.
-Native terminal UI with English/Ukrainian resources and retained drafts. WebRTC,
-phone-hosted signaling, ICE/STUN/TURN/SDP and the obsolete probe are removed.
+Native terminal UI with English/Ukrainian resources and retained drafts.
+Only the bundled Tor transport is supported.
 
 Preview qualification is in docs/VALIDATION.md. Real Tor emulator checks are distinct
 from physical-phone/mobile/CGNAT/OEM battery acceptance, which remains NOT VERIFIED.

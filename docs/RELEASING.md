@@ -29,7 +29,7 @@ python3 tools/check_tor_apks.py
 Before distribution run README checks and real-Tor tests. Verify every signature
 using SDK apksigner verify --verbose --print-certs. The artifact audit checks
 ZIP alignment, manifest/version/permissions, absence of the release debug provider,
-exact native inventory, no WebRTC dex and bundled notices. Supplying
+exact native inventory, approved executable content and bundled notices. Supplying
 --expected-release-signer with the public certificate SHA256 also verifies every
 release signature and its continuity. It records sizes/hashes
 from the current Gradle output metadata rather than stale APKs. --build-tools can
@@ -54,8 +54,8 @@ in cleanup. MMC_ADB can select a nonstandard adb path.
 A single emulator cycling cached activities did not qualify this path; finite
 background grace and UI automation cannot substitute for two open phones. Two
 emulators still do not establish physical Wi-Fi/mobile/CGNAT/OEM battery acceptance.
-The obsolete probe, extra QA package variant, old phone/relay smoke scripts and
-0.0.1 publisher/packager are removed to avoid testing/publishing a dead architecture.
+Use the ordinary app package on both emulators. Only the current build/audit
+commands above are supported.
 
 This migration authorizes local builds/commits, not publication, release creation,
 new infrastructure or uploads. APKs remain ignored build outputs. Future publication

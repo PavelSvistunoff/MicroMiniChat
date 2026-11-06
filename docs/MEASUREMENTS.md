@@ -1,42 +1,23 @@
-> HISTORICAL WEBRTC PREVIEW EVIDENCE. Unsupported by the Tor product. See README.md and docs/VALIDATION.md for current behavior.
+# Tor measurements and reproduction
 
-# Measurements and Reproduction
+Current artifact evidence: [TOR_APK_METRICS.json](TOR_APK_METRICS.json).
+Network/memory/transfer sample: [TOR_PERFORMANCE.json](TOR_PERFORMANCE.json).
+Signed native UI acceptance: [TOR_UI_SMOKE.json](TOR_UI_SMOKE.json).
+Methods, failed attempts, final outcomes and qualification limits are in
+[VALIDATION.md](VALIDATION.md).
 
-## Actual observations
+Use tools/apk_metrics.py for byte counts, hashes and native entries, and
+tools/check_tor_apks.py for current-output manifests, native inventory, notices,
+alignment and optional expected-signer verification. Use the JDK17/SDK35 pinned
+build and record the exact APK hash, variant, API, ABI and measurement conditions.
 
-See RELEASE_APK_METRICS.json for signed per-ABI/universal APK byte counts, SHA-256
-hashes and native entry compressed/uncompressed bytes. Baseline M01/M02 metric JSONs
-are historical prototype measurements, not final app sizes. WebRTC native code is the
-largest contribution; AndroidX/JUnit are absent from the app runtime graph.
+The real-Tor sample uses two clients in one warmed debug process: timings exclude
+human comparison and PSS includes both native children separately. It predates the
+final Join-dialog keyboard correction and is not a minified-release benchmark.
+Cold-process release UI launch samples retain an existing identity/history and
+exclude asynchronous Tor readiness. Do not extrapolate battery life, physical
+throughput or per-phone memory from these samples. Physical battery, OEM/Doze,
+API26 and non-arm64 runtime qualification remain NOT VERIFIED.
 
-QA_RESOURCE_METRICS.json records API 35 arm64 debug instrumentation with two connected
-peers in one process: 42,138 KiB PSS and 29 ms CPU during a 10,002 ms idle sample;
-UID RX and TX counters each increased by 2,774 bytes. Do not extrapolate battery life,
-WAN overhead or one-phone release RAM from this emulator sample. Release startup/native
-UI observations are in RELEASE_SMOKE_RESULTS.json; the two-process signed UI smoke passed.
-Physical battery, thermal, startup-repeat and 16 KB runtime measurements are absent.
-
-## Reproduction
-
-Build the same variant/ABI/configuration; record JDK/SDK/device/OS/ABI and power state.
-Use `python3 tools/apk_metrics.py path/to.apk` and Gradle runtime dependency reports.
-Compare like-for-like APKs; shrinker deltas include application changes, not just the
-library. `tools/package_release.py` verifies signatures, package/permission boundaries
-and ZIP alignment before staging artifacts/checksums.
-
-PerformanceTest samples Process.getElapsedCpuTime, Debug.getPss and UID TrafficStats
-over a fixed connected-idle interval. It writes only aggregate counters, never private
-payloads. Device-test runners may uninstall apps afterward; retrieve the artifact before
-cleanup or run that test directly through adb. For actual phone performance, repeat
-controlled cold starts (`am start -W`), PSS (`dumpsys meminfo`), idle/transfer CPU/traffic
-and battery intervals against an idle baseline. Record failures and variance.
-
-## Signed 0.0.1 artifacts
-
-| ABI | APK bytes |
-| --- | ---: |
-| arm64-v8a | 12,563,657 |
-| armeabi-v7a | 7,089,431 |
-| x86 | 13,095,947 |
-| x86_64 | 16,442,454 |
-| universal | 48,325,984 |
+See [release instructions](RELEASING.md) and [physical checklist](PHYSICAL_TEST_PLAN.md)
+for reproducible commands and the remaining acceptance procedure.

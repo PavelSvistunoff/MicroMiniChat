@@ -1,82 +1,43 @@
-# Tor migration plan
+# Tor implementation plan and outcome
 
-Authoritative requirements: `TOR_MIGRATION_SPEC.md`. Work branch:
-`feature/tor-migration`. No publication or identity/data deletion is authorized.
+Authoritative requirements: [TOR_MIGRATION_SPEC.md](../TOR_MIGRATION_SPEC.md).
+Work branch: feature/tor-migration. Publication and user identity/data deletion
+are outside this authorization.
 
-## M01 audit — confirmed
+## Audit and preserved boundaries
 
-The initial checkout was `main` at the existing phone-pairing preview. All seven
-required root documents and AGENTS.md were read. The repository contains one app,
-a synthetic probe, JVM/instrumentation tests, release tooling, historical evidence
-and signed historical APKs. `.DS_Store` is unrelated untracked user state.
+The required root documents and repository instructions were read before changing
+architecture. Preserve Frame, ReliableProtocol, MessageDatabase, FileOffer,
+FileTransfers, SAF consent, durable ACKs, receipts and deduplication. Existing
+history partitions and wrapped certificates remain local; new route bindings
+require explicit verification. Expired/missing established identities fail closed.
 
-WebRTC coupling occurs in `WebRtcTransport`, `ChatSession`, `IdentityStore`,
-`PairingTls`, `Signal`, `IceConfig`, `PhonePairing`, MainActivity, native tests,
-probe, dependency verification, shrinker rules, notices and smoke tools. Both
-modules declare `io.github.webrtc-sdk:android:150.7871.04`. Remove these only after
-the replacement works. Historical APKs/evidence do not demonstrate Tor behavior.
+ChatApp owns one serialized coordinator across Activity recreation. Native network
+and file workers stay off the main thread. Background grace is finite; no continuous
+service or terminated-app delivery is promised. Dependencies are minimal, pinned
+and accompanied by notices. Binary hashes do not prove reproducible native builds.
 
-Reuse `Frame`, `ReliableProtocol`, `MessageDatabase`, `FileOffer`, `FileTransfers`,
-SAF consent and receipt semantics. Database schema v1 stores peer fingerprints as
-partition keys; preserve these and all history. Existing wrapped PEM identities
-can potentially supply TLS certificates, but expired certificates must fail
-closed. Existing trust must never be implicitly bound to a new onion address.
-Require explicit migration verification without deleting history.
+## Milestone dependency order
 
-ChatApp owns the coordinator across activity recreation; Android callbacks run
-through a HandlerThread. File I/O has a separate bounded worker pool. Background
-grace is finite; no terminated-app delivery or continuous service is implemented.
+1. Audit dependencies, persistence, trust, lifecycle and runtime provenance.
+2. Qualify the bundled Tor executable and persistent v3 onion publication/restart.
+3. Implement bounded single-use invitations and mutual pinned TLS1.3.
+4. Add bounded framed multiplexing, deadlines, cancellation and backpressure.
+5. Preserve durable text IDs/ACK/deduplication and consented hashed SAF streaming.
+6. Persist verified routes, arbitrate simultaneous sessions and reconnect with jitter.
+7. Implement foreground lifecycle, native terminal Views and English/Ukrainian resources.
+8. Review security, hostile input, storage failures and Android/export boundaries.
+9. Run real-Tor software validation and all available hardware checks; record gaps.
+10. Measure APK/performance, remove unused components and finish current documentation.
 
-## Runtime investigation
+## Confirmed outcome and remaining qualification
 
-Guardian Project publishes `info.guardianproject:tor-android:0.4.9.14` on Maven
-Central. Its actual POM and source JAR were downloaded for inspection, rather than
-assuming coordinates. Upstream: https://github.com/guardianproject/tor-android .
-The POM declares BSD-3-Clause and dependencies on localbroadcastmanager 1.1.0,
-jtorctl 0.4.5.7 and Kotlin stdlib 2.2.10. The service wraps bundled JNI libtor,
-uses a private Unix control socket, and supports a private torrc. It also logs
-exception text and sends status broadcasts; these require explicit review before
-adoption. Current master is not evidence of compatibility of the published AAR.
-Binary ABIs, metadata, provenance, native loading, restart and actual bootstrap
-remain unverified at this audit step.
+Software milestones M01–M17 are implemented and committed. The runtime is an owned
+child process rather than an in-process JNI bridge; actual native lifecycle and
+onion publication passed. Four ABI/universal builds, reliable text/files, terminal
+UI and signed two-emulator pairing/reconnect are recorded in [VALIDATION.md](VALIDATION.md).
 
-## Dependency order and implementation decisions to validate
-
-1. M02: inspect published AAR, verify checksums/signatures/source provenance,
-   select runtime integration; test asynchronous start/stop/failure without
-   leaking diagnostics. Block adoption on unverifiable binary or incompatible API.
-2. M03: persistent protected service directory, local listener, readiness from
-   descriptor publication (not merely hostname creation); missing keys fail closed.
-3. M04–M05: bounded versioned onion invitation, capability expiration/consumption;
-   standard mutual TLS with pinned persistent certificates. Evaluate TLS 1.3 API
-   availability on API 26 rather than inventing a new handshake. Persist explicit
-   trust and route atomically. No plaintext or trust-all fallback.
-4. M06: length-delimited multiplexed stream with bounded prioritized queues,
-   deadlines, cancellation and serialized callbacks. Retain application frames.
-5. M07–M08: reconnect retries with original durable message IDs; retain SAF
-   streaming and stop-and-wait chunk ACKs. Tor latency may require longer measured
-   deadlines; never weaken commit-before-ACK or hash verification.
-6. M09–M10: deterministic endpoint arbitration, generation fencing, jittered
-   exponential retry, network callback and lifecycle cleanup. Evaluate eligible
-   foreground service type against current Android documentation.
-7. M11–M12: native terminal screen, compact entries, retained draft, centralized
-   palette/dimensions, English and Ukrainian resources with stable protocol codes.
-8. M13–M14: adversarial parser/authentication/lifecycle/storage tests, manifest,
-   dependency and bypass review; distinguish deterministic fakes from real Tor.
-9. M15–M16: execute only available device scenarios, record actual timing/PSS/APK
-   and throughput; all unavailable hardware/network results NOT VERIFIED.
-10. M17: replace current runtime instructions, retire obsolete probe/dependencies,
-    preserve historical notices/artifacts, publish build instructions and evidence.
-
-Each milestone requires implementation, relevant validation, review, evidence and
-its own commit. This file is an audit/plan, not a completion claim for M02–M17.
-
-## Execution outcome
-
-The planned Tor-only architecture is implemented through M17; see TASKS.md and
-docs/VALIDATION.md for exact final checks and remaining qualification gates.
-The original JNI candidate crashed during real onion testing and was removed;
-the verified bundled executable now runs as an owned child, keeping JDK17/SDK35.
-Conscrypt provides TLS1.3 on the API26 compile baseline. WebRTC runtime/source/probe
-are removed, while historical notices and immutable release artifacts remain.
-Physical acceptance stays explicitly deferred; no publication is part of this work.
+Physical acceptance remains deferred. API26/non-arm64 runtime, physical networks,
+OEM sleep/battery and independent native/security qualification are NOT VERIFIED.
+See [TASKS.md](../TASKS.md), [runtime updates](TOR_RUNTIME.md) and
+[physical checklist](PHYSICAL_TEST_PLAN.md). No publication occurred.

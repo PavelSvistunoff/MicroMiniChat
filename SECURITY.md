@@ -10,7 +10,7 @@ or an anonymity guarantee. Physical-device/network acceptance remains deferred.
 All remote application streams use an explicit SOCKS5 request to the bundled
 Tor's loopback listener. Remote targets must pass canonical v3 address, version
 and SHA3 checksum validation. There is no DNS, system proxy, direct transport or
-external signaling fallback. Tor itself necessarily connects to the Tor network.
+external routing fallback. Tor itself necessarily connects to the Tor network.
 
 Pinned Conscrypt 2.8.0 provides TLS 1.3 only, mutual P-256 certificate proof, fresh
 session keys and ALPN mmc-tor/2. Session tickets are disabled and no early product

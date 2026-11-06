@@ -1,7 +1,7 @@
 # MicroMiniChat
 
 A two-person Android messenger using bundled Tor v3 onion services and mutual
-TLS 1.3. No account, backend, public IP configuration, forwarding or extra Tor app.
+TLS 1.3. No account, backend, manual network configuration or extra Tor app.
 Native terminal-style interface; English and Ukrainian; local message history,
 durable delivery acknowledgments, offline local queue and consented file streaming.
 

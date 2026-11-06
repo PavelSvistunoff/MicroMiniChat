@@ -1,12 +1,12 @@
 # MicroMiniChat product specification
 
 TOR_MIGRATION_SPEC.md is the authoritative approved full specification. This document
-summarizes the implemented product; historical WebRTC previews do not define runtime behavior.
+summarizes the implemented Tor product.
 
 One verified two-person conversation, no accounts/contact lists/groups/server storage.
 Embedded Tor client plus persistent v3 onion service on each installation; mutual
 TLS 1.3, explicit bilateral fingerprint verification, stable peer route and key pins.
-No direct Internet application path, signaling service, push or fallback transport.
+No direct Internet application path, application backend, push or fallback transport.
 
 Ten-minute single-use invitations via custom URI, Android Sharesheet and bounded
 paste/import. Import never initiates a connection. Changed identities/routes block
